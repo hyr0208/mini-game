@@ -288,6 +288,19 @@
   color: #ffd15d;
 }
 
+.hud-rank-chip {
+  align-self: center;
+  margin-top: 6px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: rgba(255, 209, 93, 0.15);
+  border: 1px solid rgba(255, 209, 93, 0.4);
+  color: #ffd15d;
+  font-weight: 700;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
 .hud-loading {
   position: absolute;
   top: 50%;

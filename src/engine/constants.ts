@@ -20,13 +20,21 @@ export const BONUS_MULTIPLIER = 2;
 /** 신호가 수렴해야 하는 목표 링의 반지름 (px) */
 export const TARGET_RADIUS = 60;
 /** 바깥쪽 링이 목표 크기까지 줄어드는 데 걸리는 시간 (초) — 신호가 미리 보이기 시작하는 시점 */
-export const RING_LEAD_SEC = 1.1;
+export const RING_LEAD_SEC = 0.8;
 export const RING_MAX_RADIUS = 220;
 
 /** 입력 시 튀어오르는 펀치 이펙트 길이 (초) */
 export const PUNCH_DURATION_SEC = 0.22;
 export const PARTICLE_LIFE_SEC = 0.4;
 export const PARTICLE_COUNT = 14;
+
+/** 이 콤보 수의 배수마다 큰 축하 배너를 띄운다 */
+export const COMBO_MILESTONE_STEP = 5;
+/** 콤보 마일스톤 배너가 화면에 떠 있는 시간 (초) */
+export const COMBO_BANNER_DURATION_SEC = 0.7;
+/** 미스했을 때 화면이 흔들리는 시간 (초) */
+export const SHAKE_DURATION_SEC = 0.25;
+export const SHAKE_MAGNITUDE_PX = 10;
 
 /** 각 플레이어 기기가 서버에 접속할 WebSocket 주소 */
 export const WS_URL =

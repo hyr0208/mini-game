@@ -36,7 +36,7 @@ function App() {
 
   // 호스트 쪽 상태
   const [roomCode, setRoomCode] = useState<string | null>(null);
-  const [lobbyPlayers, setLobbyPlayers] = useState<PlayerInfo[]>([]);
+  const [roster, setRoster] = useState<PlayerInfo[]>([]);
   const [chart, setChart] = useState<Chart | null>(null);
   const [startAnchor, setStartAnchor] = useState<number | null>(null);
   const [gamePlayers, setGamePlayers] = useState<PlayerInfo[]>([]);
@@ -54,7 +54,7 @@ function App() {
     client.disconnect();
     setClient(new RoomClient());
     setRoomCode(null);
-    setLobbyPlayers([]);
+    setRoster([]);
     setChart(null);
     setStartAnchor(null);
     setGamePlayers([]);
@@ -71,7 +71,7 @@ function App() {
       await client.connect(WS_URL);
       client.setCallbacks({
         onRoomCreated: (code) => setRoomCode(code),
-        onPlayerList: (list) => setLobbyPlayers(list),
+        onPlayerList: (list) => setRoster(list),
       });
       client.createRoom();
       setScreen('hostLobby');
@@ -105,7 +105,7 @@ function App() {
         <HostLobby
           client={client}
           roomCode={roomCode}
-          players={lobbyPlayers}
+          players={roster}
           onStart={(selectedChart, anchor, players) => {
             setChart(selectedChart);
             setStartAnchor(anchor);
@@ -143,6 +143,7 @@ function App() {
         <JoinRoom
           client={client}
           onJoined={(code, playerId) => {
+            client.setCallbacks({ onPlayerList: (list) => setRoster(list) });
             setRoomCode(code);
             setMyPlayerId(playerId);
             setScreen('playerLobby');
@@ -155,6 +156,7 @@ function App() {
         <PlayerLobby
           client={client}
           roomCode={roomCode}
+          players={roster}
           myPlayerId={myPlayerId}
           onGameStarting={(chartId, anchor) => {
             const selectedChart = SONGS.find((song) => song.id === chartId);
@@ -168,12 +170,14 @@ function App() {
         />
       )}
 
-      {screen === 'playerGame' && chart && startAnchor !== null && (
+      {screen === 'playerGame' && chart && startAnchor !== null && myPlayerId && (
         <PlayerGameScreen
           key={runId}
           client={client}
           chart={chart}
           startAnchorServerTime={startAnchor}
+          roster={roster}
+          myPlayerId={myPlayerId}
           onRoundFinished={(results) => {
             setPlayerResults(results);
             setScreen('playerResult');

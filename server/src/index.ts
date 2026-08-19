@@ -179,12 +179,15 @@ wss.on('connection', (socket) => {
         player.score = msg.score;
         player.combo = msg.combo;
         player.maxCombo = Math.max(player.maxCombo, msg.combo);
-        send(room.hostSocket, {
+        const updateMessage: ServerMessage = {
           type: 'player_update',
           playerId: state.playerId,
           score: player.score,
           combo: player.combo,
-        });
+        };
+        // 호스트뿐 아니라 참가자 전원에게도 알려서 각자 화면에서 실시간 순위를 볼 수 있게 한다.
+        send(room.hostSocket, updateMessage);
+        for (const p of room.players.values()) send(p.socket, updateMessage);
         break;
       }
 

@@ -1,6 +1,8 @@
 import type { Chart, ChartNote, EngineCallbacks, EngineStats, Judgement, JudgementEvent } from './types';
 import {
   BONUS_MULTIPLIER,
+  COMBO_BANNER_DURATION_SEC,
+  COMBO_MILESTONE_STEP,
   HIT_WINDOWS_MS,
   PARTICLE_COUNT,
   PARTICLE_LIFE_SEC,
@@ -8,6 +10,8 @@ import {
   RING_LEAD_SEC,
   RING_MAX_RADIUS,
   SCORE_TABLE,
+  SHAKE_DURATION_SEC,
+  SHAKE_MAGNITUDE_PX,
   TARGET_RADIUS,
 } from './constants';
 
@@ -67,6 +71,9 @@ export class PlayerEngine {
   private particles: Particle[] = [];
   private punchAt: number | null = null;
   private flashColor: string | null = null;
+  private shakeAt: number | null = null;
+  private comboBannerAt: number | null = null;
+  private comboBannerText = '';
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -132,9 +139,14 @@ export class PlayerEngine {
   private applyJudgement(judgement: Judgement, deltaMs: number, isBonus: boolean) {
     if (judgement === 'miss') {
       this.combo = 0;
+      this.shakeAt = performance.now();
     } else {
       this.combo += 1;
       this.maxCombo = Math.max(this.maxCombo, this.combo);
+      if (this.combo > 0 && this.combo % COMBO_MILESTONE_STEP === 0) {
+        this.comboBannerAt = performance.now();
+        this.comboBannerText = `${this.combo} COMBO!`;
+      }
     }
     this.counts[judgement] += 1;
     const base = SCORE_TABLE[judgement];
@@ -233,9 +245,53 @@ export class PlayerEngine {
     ctx.fillStyle = '#0b0b14';
     ctx.fillRect(0, 0, w, h);
 
+    ctx.save();
+    const [shakeX, shakeY] = this.getShakeOffset(nowMs);
+    ctx.translate(shakeX, shakeY);
+
     this.drawRing(cx, cy, songTime);
     this.drawParticles();
     this.drawTapZone(w, h, nowMs);
+    this.drawComboBanner(cx, cy, nowMs);
+
+    ctx.restore();
+  }
+
+  private getShakeOffset(nowMs: number): [number, number] {
+    if (this.shakeAt === null) return [0, 0];
+    const elapsed = (nowMs - this.shakeAt) / 1000;
+    if (elapsed >= SHAKE_DURATION_SEC) {
+      this.shakeAt = null;
+      return [0, 0];
+    }
+    const decay = 1 - elapsed / SHAKE_DURATION_SEC;
+    const angle = elapsed * 60;
+    return [Math.cos(angle) * SHAKE_MAGNITUDE_PX * decay, Math.sin(angle * 1.3) * SHAKE_MAGNITUDE_PX * decay];
+  }
+
+  private drawComboBanner(cx: number, cy: number, nowMs: number) {
+    if (this.comboBannerAt === null) return;
+    const elapsed = (nowMs - this.comboBannerAt) / 1000;
+    if (elapsed >= COMBO_BANNER_DURATION_SEC) {
+      this.comboBannerAt = null;
+      return;
+    }
+
+    const { ctx } = this;
+    const t = elapsed / COMBO_BANNER_DURATION_SEC;
+    const scale = 1.4 - t * 0.4;
+    const alpha = 1 - t;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = '#ffd15d';
+    ctx.font = 'bold 32px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(this.comboBannerText, 0, 0);
+    ctx.restore();
   }
 
   private drawRing(cx: number, cy: number, songTime: number) {

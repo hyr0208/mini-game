@@ -53,7 +53,7 @@ export function HostGameScreen({ client, chart, startAnchorServerTime, initialPl
         await audioEngine.loadFromUrl(chart.audioSrc);
       } else {
         const lastNoteTime = chart.notes.length ? chart.notes[chart.notes.length - 1].time : 0;
-        audioEngine.generateClickTrack(chart.notes, lastNoteTime + 3);
+        audioEngine.generateClickTrack(chart, lastNoteTime + 3);
       }
       const delaySec = Math.max(0.05, (startAnchorServerTime - client.now()) / 1000);
       audioEngine.play(delaySec);
