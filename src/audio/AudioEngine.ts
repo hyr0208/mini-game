@@ -38,8 +38,8 @@ export class AudioEngine {
 
     const clickSamples = Math.floor(0.05 * sampleRate);
     for (const note of notes) {
-      // 돈(짝수 lane)은 낮은 북소리, 카(홀수 lane)는 높은 타격음으로 구분한다.
-      const frequency = note.lane % 2 === 0 ? 180 : 1400;
+      // 보너스 신호(lane === 1)는 더 높고 화려한 톤으로 구분한다.
+      const frequency = note.lane === 1 ? 1400 : 700;
       const startSample = Math.floor(note.time * sampleRate);
       for (let i = 0; i < clickSamples; i++) {
         const idx = startSample + i;

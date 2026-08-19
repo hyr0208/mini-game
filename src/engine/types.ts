@@ -1,11 +1,8 @@
 export type Judgement = 'perfect' | 'great' | 'good' | 'miss';
 
-/** 태고식 2체계 입력: 돈(빨강, 가운데) / 카(파랑, 테두리) */
-export type NoteInput = 'don' | 'ka';
-
 /**
- * 채보 노트 하나. time은 곡 시작(0초) 기준 초 단위.
- * lane은 노트 종류를 나타낸다: 0=돈, 1=카, 2=큰돈, 3=큰카.
+ * 채보 노트 하나. time은 곡 시작(0초) 기준 초 단위, 모든 플레이어가 공유하는
+ * 신호 발생 시각이다. lane은 신호 종류: 0=기본 신호, 1=보너스 신호(점수 2배).
  */
 export interface ChartNote {
   time: number;
@@ -26,8 +23,7 @@ export interface Chart {
 
 export interface JudgementEvent {
   judgement: Judgement;
-  input: NoteInput;
-  /** 판정 시점과 노트 타이밍의 차이(ms). 음수면 빠르게, 양수면 늦게 입력한 것. */
+  /** 판정 시점과 신호 타이밍의 차이(ms). 음수면 빠르게, 양수면 늦게 입력한 것. */
   delta: number;
   combo: number;
   score: number;
@@ -40,10 +36,8 @@ export interface EngineStats {
   counts: Record<Judgement, number>;
 }
 
-export interface GameEngineCallbacks {
+export interface EngineCallbacks {
   onJudgement?: (event: JudgementEvent) => void;
-  onComboChange?: (combo: number, maxCombo: number) => void;
-  onScoreChange?: (score: number) => void;
   onProgress?: (songTime: number, duration: number) => void;
   onFinish?: (stats: EngineStats) => void;
 }

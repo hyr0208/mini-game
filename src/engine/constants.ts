@@ -1,30 +1,11 @@
-import type { Judgement, NoteInput } from './types';
-
-/** 노트가 판정존을 향해 이동하는 속도 (px/sec) */
-export const NOTE_SPEED_PX_PER_SEC = 480;
-
-/** 판정존의 가로 위치 (캔버스 너비 대비 비율, 오른쪽에 위치) */
-export const HIT_X_RATIO = 0.82;
+import type { Judgement } from './types';
 
 /** 각 판정 등급의 허용 오차 (ms, 절대값) */
 export const HIT_WINDOWS_MS = {
-  perfect: 40,
-  great: 80,
-  good: 120,
+  perfect: 45,
+  great: 90,
+  good: 140,
 } as const;
-
-export const NOTE_RADIUS = { small: 26, big: 38 } as const;
-
-export const DON_COLOR = '#ef4444';
-export const KA_COLOR = '#38bdf8';
-
-/** 키보드 D/F/J/K를 돈/카 두 입력 그룹으로 매핑 (실제 태고 컨트롤러의 좌우 대칭 배치를 따름) */
-export const KEY_TO_INPUT: Record<string, NoteInput> = {
-  f: 'don',
-  j: 'don',
-  d: 'ka',
-  k: 'ka',
-};
 
 export const SCORE_TABLE: Record<Judgement, number> = {
   perfect: 1000,
@@ -33,9 +14,24 @@ export const SCORE_TABLE: Record<Judgement, number> = {
   miss: 0,
 };
 
-export const BIG_NOTE_SCORE_MULTIPLIER = 2;
+/** 보너스 신호(lane === 1)의 점수 배율 */
+export const BONUS_MULTIPLIER = 2;
 
-/** 판정존 펀치/파티클 이펙트가 사라지는 데 걸리는 시간 (초) */
-export const PUNCH_DURATION_SEC = 0.18;
+/** 신호가 수렴해야 하는 목표 링의 반지름 (px) */
+export const TARGET_RADIUS = 60;
+/** 바깥쪽 링이 목표 크기까지 줄어드는 데 걸리는 시간 (초) — 신호가 미리 보이기 시작하는 시점 */
+export const RING_LEAD_SEC = 1.1;
+export const RING_MAX_RADIUS = 220;
+
+/** 입력 시 튀어오르는 펀치 이펙트 길이 (초) */
+export const PUNCH_DURATION_SEC = 0.22;
 export const PARTICLE_LIFE_SEC = 0.4;
 export const PARTICLE_COUNT = 14;
+
+/** 각 플레이어 기기가 서버에 접속할 WebSocket 주소 */
+export const WS_URL =
+  (import.meta.env.VITE_WS_URL as string | undefined) ??
+  `ws://${typeof location !== 'undefined' ? location.hostname : 'localhost'}:8787`;
+
+/** 호스트가 신호 시작 시각을 서버 기준 시각으로 예약할 때, 얼마나 여유를 두고 예약할지 (ms) */
+export const START_LEAD_MS = 3000;

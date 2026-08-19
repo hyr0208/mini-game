@@ -1,12 +1,19 @@
 .app {
+  position: relative;
   width: 100%;
   min-height: 100svh;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  background:
+    radial-gradient(600px circle at 15% 20%, rgba(255, 93, 143, 0.16), transparent 60%),
+    radial-gradient(560px circle at 85% 15%, rgba(93, 214, 255, 0.14), transparent 60%),
+    radial-gradient(620px circle at 50% 100%, rgba(255, 209, 93, 0.1), transparent 60%);
 }
 
 .screen {
+  position: relative;
   width: 100%;
   max-width: 480px;
   display: flex;
@@ -18,19 +25,144 @@
 }
 
 /* --- 메뉴 --- */
+.menu-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 132px;
+}
+
+.menu-hero-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+}
+
+.menu-hero-ring-outer {
+  width: 220px;
+  height: 220px;
+  animation: hero-pulse 3.2s ease-in-out infinite;
+}
+
+.menu-hero-ring-inner {
+  width: 140px;
+  height: 140px;
+  border-color: rgba(255, 209, 93, 0.22);
+  animation: hero-pulse 3.2s ease-in-out infinite 0.35s;
+}
+
+@keyframes hero-pulse {
+  0%,
+  100% {
+    transform: scale(0.94);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
 .menu-screen .title {
+  position: relative;
   font-size: 56px;
-  font-weight: 700;
-  letter-spacing: 4px;
+  font-weight: 800;
+  letter-spacing: 6px;
   margin: 0;
-  background: linear-gradient(90deg, #ff5d8f, #5dd6ff);
+  background: linear-gradient(90deg, #ff5d8f, #ffd15d, #5dd6ff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  filter: drop-shadow(0 0 24px rgba(255, 93, 143, 0.25));
 }
 
 .menu-screen .subtitle {
-  margin: 0 0 16px;
+  margin: 0 0 8px;
+  color: #9a9ab0;
+}
+
+.role-cards {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.role-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 18px 20px;
+  border-radius: 16px;
+  border: 1px solid #2a2a3a;
+  background: #14141f;
+  color: #e6e6f0;
+  text-align: left;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.role-card:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.role-card:disabled {
+  opacity: 0.6;
+}
+
+.role-card-host:hover:not(:disabled) {
+  border-color: rgba(255, 93, 143, 0.6);
+  background: #1c1520;
+}
+
+.role-card-join:hover:not(:disabled) {
+  border-color: rgba(93, 214, 255, 0.6);
+  background: #131b22;
+}
+
+.role-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.role-card-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.role-card-host .role-card-icon {
+  color: #ff5d8f;
+}
+
+.role-card-join .role-card-icon {
+  color: #5dd6ff;
+}
+
+.role-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.role-card-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.role-card-desc {
+  font-size: 13px;
   color: #9a9ab0;
 }
 
@@ -121,33 +253,182 @@
   pointer-events: none;
   display: flex;
   flex-direction: column;
-  align-items: center;
   padding: 16px;
 }
 
-.hud-score {
-  align-self: flex-end;
-  font-size: 28px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: #fff;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+.hud-scoreboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  justify-content: center;
 }
 
-.hud-combo {
-  margin-top: 8px;
-  font-size: 22px;
+.hud-player-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-player-name {
+  font-weight: 700;
+  color: #e6e6f0;
+}
+
+.hud-player-score {
+  font-weight: 700;
+  color: #fff;
+}
+
+.hud-player-combo {
+  font-size: 12px;
+  color: #ffd15d;
+}
+
+.hud-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #9a9ab0;
+}
+
+/* --- 방 코드 / 폼 --- */
+.room-code {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  color: #ffd15d;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #3a3a4a;
+  background: #14141f;
+  color: #e6e6f0;
+  font-size: 16px;
+  text-align: center;
+}
+
+.text-input::placeholder {
+  color: #6a6a7a;
+}
+
+.error-text {
+  color: #ff5d8f;
+  font-size: 14px;
+  margin: 0;
+}
+
+.song-button.active {
+  border-color: #ffd15d;
+  background: #1c2230;
+}
+
+.player-key-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.player-key-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: #14141f;
+  border: 1px solid #2a2a3a;
+}
+
+.player-name {
+  font-weight: 600;
+  flex: 1;
+  text-align: left;
+}
+
+.player-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* --- 결과 --- */
+.result-ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.result-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #14141f;
+  border: 1px solid #2a2a3a;
+}
+
+.result-rank-row.me {
+  border-color: #ffd15d;
+  background: #201d14;
+}
+
+.rank-label {
   font-weight: 700;
   color: #ffd15d;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  min-width: 36px;
 }
 
-.hud-judgement {
-  margin-top: 12px;
-  font-size: 20px;
+.rank-name {
+  font-weight: 600;
+  flex: 1;
+  text-align: left;
+}
+
+.rank-score {
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-combo {
+  font-size: 12px;
+  color: #9a9ab0;
+}
+
+.result-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* --- 판정 팝업 (플레이어 화면) --- */
+.hud-judgement {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 22px;
+  font-weight: 800;
   letter-spacing: 2px;
   animation: fade-out 0.5s ease-out forwards;
+  pointer-events: none;
 }
 
 .judgement-perfect {
@@ -166,101 +447,19 @@
 @keyframes fade-out {
   from {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, -50%) scale(1.1);
   }
   to {
     opacity: 0;
-    transform: translateY(-12px);
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
-.hud-loading {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #9a9ab0;
-}
-
-.hud-keys {
-  margin-top: auto;
-  display: flex;
-  gap: 12px;
-}
-
-.hud-key-group {
-  display: flex;
-  gap: 10px;
-}
-
-.hud-key {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  color: #e6e6f0;
-}
-
-.hud-key-don {
-  border-color: rgba(239, 68, 68, 0.6);
-  background: rgba(239, 68, 68, 0.15);
-}
-
-.hud-key-ka {
-  border-color: rgba(56, 189, 248, 0.6);
-  background: rgba(56, 189, 248, 0.15);
-}
-
-.hud-key-labels {
-  display: flex;
-  gap: 10px;
-  margin-top: 4px;
-  justify-content: center;
-}
-
-.hud-key-label {
-  width: 34px;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.hud-key-label-don {
-  color: #ef4444;
-}
-
-.hud-key-label-ka {
-  color: #38bdf8;
-}
-
-/* --- 결과 --- */
-.result-score {
-  font-size: 40px;
-  font-weight: 700;
-}
-
-.result-combo {
-  color: #ffd15d;
-  font-weight: 600;
-}
-
-.result-counts {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 24px;
-  color: #c9c9d8;
-}
-
-.result-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
+/* --- 플레이어 자신의 기기 화면: 폰 화면을 꽉 채운다 --- */
+.player-game-screen {
+  width: 100vw;
+  height: 100svh;
+  max-width: none;
+  border-radius: 0;
+  border: none;
 }

@@ -1,58 +1,200 @@
 import { useState } from 'react';
-import type { Chart, EngineStats } from './engine/types';
-import { MainMenu } from './components/MainMenu';
-import { SongSelect } from './components/SongSelect';
-import { GameScreen } from './components/GameScreen';
-import { ResultScreen } from './components/ResultScreen';
+import type { Chart } from './engine/types';
+import type { PlayerInfo, PlayerResult as PlayerResultData } from './net/protocol';
+import { RoomClient } from './net/RoomClient';
+import { WS_URL } from './engine/constants';
+import { SONGS } from './data/songs';
+import { RoleSelect } from './components/RoleSelect';
+import { HostLobby } from './components/HostLobby';
+import { HostGameScreen } from './components/HostGameScreen';
+import { HostResult } from './components/HostResult';
+import { JoinRoom } from './components/JoinRoom';
+import { PlayerLobby } from './components/PlayerLobby';
+import { PlayerGameScreen } from './components/PlayerGameScreen';
+import { PlayerResult } from './components/PlayerResult';
 import './App.css';
 
-type Screen = 'menu' | 'songSelect' | 'playing' | 'result';
+type Screen =
+  | 'role'
+  | 'hostLobby'
+  | 'hostGame'
+  | 'hostResult'
+  | 'joinRoom'
+  | 'playerLobby'
+  | 'playerGame'
+  | 'playerResult';
 
 /**
- * 화면 전환(메뉴/곡 선택/점수·콤보 UI)만 담당하는 최상위 컴포넌트.
- * 실제 게임 루프와 판정은 GameScreen 내부의 GameEngine이 처리한다.
+ * 화면 전환만 담당하는 최상위 컴포넌트. 실제 신호 렌더링/판정은 CueEngine·PlayerEngine이,
+ * 방 관리와 시계 동기화는 RoomClient + 서버가 담당한다.
  */
 function App() {
-  const [screen, setScreen] = useState<Screen>('menu');
+  const [client, setClient] = useState(() => new RoomClient());
+  const [screen, setScreen] = useState<Screen>('role');
+  const [connecting, setConnecting] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
+
+  // 호스트 쪽 상태
+  const [roomCode, setRoomCode] = useState<string | null>(null);
+  const [lobbyPlayers, setLobbyPlayers] = useState<PlayerInfo[]>([]);
   const [chart, setChart] = useState<Chart | null>(null);
-  const [stats, setStats] = useState<EngineStats | null>(null);
-  // GameScreen을 강제로 새로 마운트시켜 매 플레이마다 GameEngine을 새로 만들기 위한 키
+  const [startAnchor, setStartAnchor] = useState<number | null>(null);
+  const [gamePlayers, setGamePlayers] = useState<PlayerInfo[]>([]);
+  const [hostResults, setHostResults] = useState<PlayerResultData[] | null>(null);
+
+  // 참가자 쪽 상태
+  const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
+  const [playerResults, setPlayerResults] = useState<PlayerResultData[] | null>(null);
+
+  // GameScreen을 강제로 새로 마운트시켜 라운드마다 엔진을 새로 만들기 위한 키
   const [runId, setRunId] = useState(0);
+
+  const resetToRole = () => {
+    client.leaveRoom();
+    client.disconnect();
+    setClient(new RoomClient());
+    setRoomCode(null);
+    setLobbyPlayers([]);
+    setChart(null);
+    setStartAnchor(null);
+    setGamePlayers([]);
+    setHostResults(null);
+    setMyPlayerId(null);
+    setPlayerResults(null);
+    setScreen('role');
+  };
+
+  const goHost = async () => {
+    setConnecting(true);
+    setConnectError(null);
+    try {
+      await client.connect(WS_URL);
+      client.setCallbacks({
+        onRoomCreated: (code) => setRoomCode(code),
+        onPlayerList: (list) => setLobbyPlayers(list),
+      });
+      client.createRoom();
+      setScreen('hostLobby');
+    } catch {
+      setConnectError('서버에 연결할 수 없어요. 서버가 켜져 있는지 확인해주세요.');
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const goJoin = async () => {
+    setConnecting(true);
+    setConnectError(null);
+    try {
+      await client.connect(WS_URL);
+      setScreen('joinRoom');
+    } catch {
+      setConnectError('서버에 연결할 수 없어요. 서버가 켜져 있는지 확인해주세요.');
+    } finally {
+      setConnecting(false);
+    }
+  };
 
   return (
     <div className="app">
-      {screen === 'menu' && <MainMenu onStart={() => setScreen('songSelect')} />}
+      {screen === 'role' && (
+        <RoleSelect onHost={goHost} onJoin={goJoin} connecting={connecting} error={connectError} />
+      )}
 
-      {screen === 'songSelect' && (
-        <SongSelect
-          onSelect={(selected) => {
-            setChart(selected);
+      {screen === 'hostLobby' && (
+        <HostLobby
+          client={client}
+          roomCode={roomCode}
+          players={lobbyPlayers}
+          onStart={(selectedChart, anchor, players) => {
+            setChart(selectedChart);
+            setStartAnchor(anchor);
+            setGamePlayers(players);
             setRunId((id) => id + 1);
-            setScreen('playing');
+            setScreen('hostGame');
           }}
-          onBack={() => setScreen('menu')}
+          onExit={resetToRole}
         />
       )}
 
-      {screen === 'playing' && chart && (
-        <GameScreen
+      {screen === 'hostGame' && chart && startAnchor !== null && (
+        <HostGameScreen
           key={runId}
+          client={client}
           chart={chart}
-          onFinish={(finishedStats) => {
-            setStats(finishedStats);
-            setScreen('result');
+          startAnchorServerTime={startAnchor}
+          initialPlayers={gamePlayers}
+          onFinish={(results) => {
+            setHostResults(results);
+            setScreen('hostResult');
           }}
         />
       )}
 
-      {screen === 'result' && stats && (
-        <ResultScreen
-          stats={stats}
-          onRetry={() => {
-            setRunId((id) => id + 1);
-            setScreen('playing');
+      {screen === 'hostResult' && hostResults && (
+        <HostResult
+          results={hostResults}
+          onPlayAgain={() => setScreen('hostLobby')}
+          onExit={resetToRole}
+        />
+      )}
+
+      {screen === 'joinRoom' && (
+        <JoinRoom
+          client={client}
+          onJoined={(code, playerId) => {
+            setRoomCode(code);
+            setMyPlayerId(playerId);
+            setScreen('playerLobby');
           }}
-          onExit={() => setScreen('songSelect')}
+          onBack={resetToRole}
+        />
+      )}
+
+      {screen === 'playerLobby' && roomCode && myPlayerId && (
+        <PlayerLobby
+          client={client}
+          roomCode={roomCode}
+          myPlayerId={myPlayerId}
+          onGameStarting={(chartId, anchor) => {
+            const selectedChart = SONGS.find((song) => song.id === chartId);
+            if (!selectedChart) return;
+            setChart(selectedChart);
+            setStartAnchor(anchor);
+            setRunId((id) => id + 1);
+            setScreen('playerGame');
+          }}
+          onRoomClosed={() => resetToRole()}
+        />
+      )}
+
+      {screen === 'playerGame' && chart && startAnchor !== null && (
+        <PlayerGameScreen
+          key={runId}
+          client={client}
+          chart={chart}
+          startAnchorServerTime={startAnchor}
+          onRoundFinished={(results) => {
+            setPlayerResults(results);
+            setScreen('playerResult');
+          }}
+        />
+      )}
+
+      {screen === 'playerResult' && myPlayerId && (
+        <PlayerResult
+          client={client}
+          results={playerResults ?? []}
+          myPlayerId={myPlayerId}
+          onGameStarting={(chartId, anchor) => {
+            const selectedChart = SONGS.find((song) => song.id === chartId);
+            if (!selectedChart) return;
+            setChart(selectedChart);
+            setStartAnchor(anchor);
+            setRunId((id) => id + 1);
+            setScreen('playerGame');
+          }}
+          onLeave={resetToRole}
         />
       )}
     </div>

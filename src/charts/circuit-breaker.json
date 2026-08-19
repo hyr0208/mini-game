@@ -2,407 +2,151 @@
   "id": "circuit-breaker",
   "title": "Circuit Breaker",
   "artist": "Demo Synth",
-  "bpm": 150,
+  "bpm": 120,
   "offset": 0,
   "notes": [
     {
-      "time": 2.2,
+      "time": 2.5,
       "lane": 0
     },
     {
-      "time": 3.4,
+      "time": 3.5,
+      "lane": 0
+    },
+    {
+      "time": 4.5,
+      "lane": 0
+    },
+    {
+      "time": 5.5,
+      "lane": 0
+    },
+    {
+      "time": 6.5,
+      "lane": 0
+    },
+    {
+      "time": 7.5,
+      "lane": 0
+    },
+    {
+      "time": 8.5,
+      "lane": 0
+    },
+    {
+      "time": 9.5,
       "lane": 1
     },
     {
-      "time": 3.6,
+      "time": 10.5,
       "lane": 0
     },
     {
-      "time": 3.8,
+      "time": 11.5,
       "lane": 0
     },
     {
-      "time": 4,
+      "time": 12.5,
       "lane": 0
     },
     {
-      "time": 5,
+      "time": 13.5,
       "lane": 0
     },
     {
-      "time": 5.2,
+      "time": 14.5,
       "lane": 0
     },
     {
-      "time": 5.4,
+      "time": 15.5,
+      "lane": 0
+    },
+    {
+      "time": 16.5,
+      "lane": 0
+    },
+    {
+      "time": 17.5,
       "lane": 1
     },
     {
-      "time": 5.6,
+      "time": 18.5,
       "lane": 0
     },
     {
-      "time": 7,
+      "time": 19.5,
       "lane": 0
     },
     {
-      "time": 7.2,
+      "time": 20.5,
       "lane": 0
     },
     {
-      "time": 7.4,
+      "time": 21.5,
       "lane": 0
     },
     {
-      "time": 7.8,
+      "time": 22.5,
+      "lane": 0
+    },
+    {
+      "time": 23.5,
+      "lane": 0
+    },
+    {
+      "time": 24.5,
+      "lane": 0
+    },
+    {
+      "time": 25.5,
       "lane": 1
     },
     {
-      "time": 8,
+      "time": 26.5,
       "lane": 0
     },
     {
-      "time": 8.2,
+      "time": 27.5,
       "lane": 0
     },
     {
-      "time": 8.4,
+      "time": 28.5,
       "lane": 0
     },
     {
-      "time": 8.6,
+      "time": 29.5,
       "lane": 0
     },
     {
-      "time": 9,
+      "time": 30.5,
       "lane": 0
     },
     {
-      "time": 9.2,
-      "lane": 2
-    },
-    {
-      "time": 9.4,
+      "time": 31.5,
       "lane": 0
     },
     {
-      "time": 9.6,
+      "time": 32.5,
       "lane": 0
     },
     {
-      "time": 9.8,
+      "time": 33.5,
       "lane": 0
     },
     {
-      "time": 10.2,
+      "time": 34.5,
       "lane": 0
     },
     {
-      "time": 10.6,
+      "time": 35.5,
       "lane": 0
     },
     {
-      "time": 11,
+      "time": 36.5,
       "lane": 0
     },
     {
-      "time": 11.2,
-      "lane": 0
-    },
-    {
-      "time": 11.6,
-      "lane": 0
-    },
-    {
-      "time": 11.8,
-      "lane": 0
-    },
-    {
-      "time": 12.4,
-      "lane": 0
-    },
-    {
-      "time": 12.6,
-      "lane": 0
-    },
-    {
-      "time": 13,
-      "lane": 0
-    },
-    {
-      "time": 13.2,
-      "lane": 1
-    },
-    {
-      "time": 13.4,
-      "lane": 0
-    },
-    {
-      "time": 13.8,
-      "lane": 0
-    },
-    {
-      "time": 14,
-      "lane": 1
-    },
-    {
-      "time": 14.2,
-      "lane": 0
-    },
-    {
-      "time": 14.4,
-      "lane": 1
-    },
-    {
-      "time": 14.6,
-      "lane": 0
-    },
-    {
-      "time": 14.8,
-      "lane": 1
-    },
-    {
-      "time": 15.2,
-      "lane": 0
-    },
-    {
-      "time": 15.4,
-      "lane": 0
-    },
-    {
-      "time": 15.8,
-      "lane": 1
-    },
-    {
-      "time": 16.2,
-      "lane": 1
-    },
-    {
-      "time": 16.4,
-      "lane": 0
-    },
-    {
-      "time": 16.6,
-      "lane": 0
-    },
-    {
-      "time": 17.4,
-      "lane": 0
-    },
-    {
-      "time": 17.6,
-      "lane": 0
-    },
-    {
-      "time": 17.8,
-      "lane": 0
-    },
-    {
-      "time": 18.2,
-      "lane": 0
-    },
-    {
-      "time": 18.4,
-      "lane": 0
-    },
-    {
-      "time": 18.6,
-      "lane": 0
-    },
-    {
-      "time": 19.2,
-      "lane": 1
-    },
-    {
-      "time": 19.4,
-      "lane": 1
-    },
-    {
-      "time": 19.6,
-      "lane": 0
-    },
-    {
-      "time": 19.8,
-      "lane": 1
-    },
-    {
-      "time": 20,
-      "lane": 0
-    },
-    {
-      "time": 20.2,
-      "lane": 0
-    },
-    {
-      "time": 20.4,
-      "lane": 1
-    },
-    {
-      "time": 20.8,
-      "lane": 0
-    },
-    {
-      "time": 21.2,
-      "lane": 0
-    },
-    {
-      "time": 21.4,
-      "lane": 0
-    },
-    {
-      "time": 21.8,
-      "lane": 0
-    },
-    {
-      "time": 22.4,
-      "lane": 1
-    },
-    {
-      "time": 22.6,
-      "lane": 0
-    },
-    {
-      "time": 22.8,
-      "lane": 0
-    },
-    {
-      "time": 23.2,
-      "lane": 0
-    },
-    {
-      "time": 23.4,
-      "lane": 1
-    },
-    {
-      "time": 23.6,
-      "lane": 0
-    },
-    {
-      "time": 23.8,
-      "lane": 0
-    },
-    {
-      "time": 24,
-      "lane": 0
-    },
-    {
-      "time": 24.4,
-      "lane": 3
-    },
-    {
-      "time": 24.8,
-      "lane": 0
-    },
-    {
-      "time": 25,
-      "lane": 1
-    },
-    {
-      "time": 25.2,
-      "lane": 2
-    },
-    {
-      "time": 25.4,
-      "lane": 0
-    },
-    {
-      "time": 25.6,
-      "lane": 0
-    },
-    {
-      "time": 25.8,
-      "lane": 1
-    },
-    {
-      "time": 26,
-      "lane": 0
-    },
-    {
-      "time": 26.2,
-      "lane": 0
-    },
-    {
-      "time": 26.4,
-      "lane": 1
-    },
-    {
-      "time": 26.8,
-      "lane": 0
-    },
-    {
-      "time": 27.4,
-      "lane": 0
-    },
-    {
-      "time": 28,
-      "lane": 0
-    },
-    {
-      "time": 28.2,
-      "lane": 0
-    },
-    {
-      "time": 28.4,
-      "lane": 0
-    },
-    {
-      "time": 28.8,
-      "lane": 1
-    },
-    {
-      "time": 29,
-      "lane": 0
-    },
-    {
-      "time": 29.2,
-      "lane": 0
-    },
-    {
-      "time": 29.8,
-      "lane": 1
-    },
-    {
-      "time": 30.2,
-      "lane": 1
-    },
-    {
-      "time": 30.4,
-      "lane": 1
-    },
-    {
-      "time": 31.2,
-      "lane": 0
-    },
-    {
-      "time": 31.6,
-      "lane": 2
-    },
-    {
-      "time": 32,
-      "lane": 1
-    },
-    {
-      "time": 32.4,
-      "lane": 2
-    },
-    {
-      "time": 32.6,
-      "lane": 0
-    },
-    {
-      "time": 32.8,
-      "lane": 0
-    },
-    {
-      "time": 33,
-      "lane": 1
-    },
-    {
-      "time": 33.6,
-      "lane": 1
-    },
-    {
-      "time": 33.8,
+      "time": 37.5,
       "lane": 0
     }
   ]
