@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Chart } from './engine/types';
+import type { Chart, EngineStats } from './engine/types';
 import type { PlayerInfo, PlayerResult as PlayerResultData } from './net/protocol';
 import { RoomClient } from './net/RoomClient';
 import { WS_URL } from './engine/constants';
@@ -12,6 +12,9 @@ import { JoinRoom } from './components/JoinRoom';
 import { PlayerLobby } from './components/PlayerLobby';
 import { PlayerGameScreen } from './components/PlayerGameScreen';
 import { PlayerResult } from './components/PlayerResult';
+import { SoloSongSelect } from './components/SoloSongSelect';
+import { SoloGameScreen } from './components/SoloGameScreen';
+import { SoloResult } from './components/SoloResult';
 import './App.css';
 
 type Screen =
@@ -22,7 +25,10 @@ type Screen =
   | 'joinRoom'
   | 'playerLobby'
   | 'playerGame'
-  | 'playerResult';
+  | 'playerResult'
+  | 'soloSelect'
+  | 'soloGame'
+  | 'soloResult';
 
 /**
  * 화면 전환만 담당하는 최상위 컴포넌트. 실제 신호 렌더링/판정은 CueEngine·PlayerEngine이,
@@ -46,6 +52,9 @@ function App() {
   const [myPlayerId, setMyPlayerId] = useState<string | null>(null);
   const [playerResults, setPlayerResults] = useState<PlayerResultData[] | null>(null);
 
+  // 혼자하기 상태
+  const [soloStats, setSoloStats] = useState<EngineStats | null>(null);
+
   // GameScreen을 강제로 새로 마운트시켜 라운드마다 엔진을 새로 만들기 위한 키
   const [runId, setRunId] = useState(0);
 
@@ -61,6 +70,7 @@ function App() {
     setHostResults(null);
     setMyPlayerId(null);
     setPlayerResults(null);
+    setSoloStats(null);
     setScreen('role');
   };
 
@@ -98,7 +108,46 @@ function App() {
   return (
     <div className="app">
       {screen === 'role' && (
-        <RoleSelect onHost={goHost} onJoin={goJoin} connecting={connecting} error={connectError} />
+        <RoleSelect
+          onHost={goHost}
+          onJoin={goJoin}
+          onSolo={() => setScreen('soloSelect')}
+          connecting={connecting}
+          error={connectError}
+        />
+      )}
+
+      {screen === 'soloSelect' && (
+        <SoloSongSelect
+          onSelect={(selectedChart) => {
+            setChart(selectedChart);
+            setRunId((id) => id + 1);
+            setScreen('soloGame');
+          }}
+          onBack={() => setScreen('role')}
+        />
+      )}
+
+      {screen === 'soloGame' && chart && (
+        <SoloGameScreen
+          key={runId}
+          chart={chart}
+          onFinish={(stats) => {
+            setSoloStats(stats);
+            setScreen('soloResult');
+          }}
+        />
+      )}
+
+      {screen === 'soloResult' && soloStats && (
+        <SoloResult
+          stats={soloStats}
+          onRetry={() => {
+            setRunId((id) => id + 1);
+            setScreen('soloGame');
+          }}
+          onExit={() => setScreen('role')}
+        />
       )}
 
       {screen === 'hostLobby' && (

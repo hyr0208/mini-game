@@ -4,6 +4,7 @@ import type { PlayerInfo } from '../net/protocol';
 import type { Chart } from '../engine/types';
 import { SONGS } from '../data/songs';
 import { START_LEAD_MS } from '../engine/constants';
+import { SongPicker } from './SongPicker';
 
 interface Props {
   client: RoomClient;
@@ -59,21 +60,7 @@ export function HostLobby({ client, roomCode, players, onStart, onExit }: Props)
         ))}
       </ul>
 
-      <div className="song-list">
-        {SONGS.map((song) => (
-          <button
-            key={song.id}
-            type="button"
-            className={`song-button ${selectedId === song.id ? 'active' : ''}`}
-            onClick={() => setSelectedId(song.id)}
-          >
-            <span className="song-title">{song.title}</span>
-            <span className="song-meta">
-              {song.artist} · BPM {song.bpm}
-            </span>
-          </button>
-        ))}
-      </div>
+      <SongPicker selectedId={selectedId} onSelect={setSelectedId} />
 
       {error && <p className="error-text">{error}</p>}
 

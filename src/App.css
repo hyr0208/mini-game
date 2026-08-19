@@ -116,6 +116,11 @@
   opacity: 0.6;
 }
 
+.role-card-solo:hover:not(:disabled) {
+  border-color: rgba(255, 209, 93, 0.6);
+  background: #201d14;
+}
+
 .role-card-host:hover:not(:disabled) {
   border-color: rgba(255, 93, 143, 0.6);
   background: #1c1520;
@@ -140,6 +145,10 @@
 .role-card-icon svg {
   width: 22px;
   height: 22px;
+}
+
+.role-card-solo .role-card-icon {
+  color: #ffd15d;
 }
 
 .role-card-host .role-card-icon {
@@ -423,6 +432,29 @@
 .rank-combo {
   font-size: 12px;
   color: #9a9ab0;
+}
+
+/* --- 혼자하기 결과 --- */
+.result-score {
+  font-size: 40px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-combo {
+  color: #ffd15d;
+  font-weight: 600;
+}
+
+.result-counts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+  color: #c9c9d8;
 }
 
 .result-actions {
