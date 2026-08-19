@@ -1,12 +1,42 @@
 import { randomUUID } from 'node:crypto';
 import { WebSocketServer, type WebSocket } from 'ws';
-import type { ClientMessage, PlayerResult, ServerMessage } from './protocol.js';
-import { MAX_PLAYERS, createRoom, generateRoomCode, nextColor, type Room } from './rooms.js';
+import type { ClientMessage, GameId, RoundResultEntry, SessionResultEntry, ServerMessage } from './protocol.js';
+import {
+  MAX_PLAYERS,
+  createRoom,
+  generateRoomCode,
+  generateSimonSequence,
+  nextColor,
+  shuffledGames,
+  type Room,
+} from './rooms.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const wss = new WebSocketServer({ port: PORT });
 
 const rooms = new Map<string, Room>();
+
+/** 라운드가 시작되기까지 host/player가 함께 보는 준비 시간 (ms). 클라이언트 상수와 반드시 맞춰야 한다. */
+const ROUND_LEAD_MS = 3000;
+/** 라운드 결과를 보여준 뒤 다음 라운드로 자동 진행하기까지 대기 시간 (ms) */
+const ROUND_RESULT_DISPLAY_MS = 3500;
+
+const SIMON_SEQUENCE_LENGTH = 5;
+const SIMON_COLOR_COUNT = 4;
+const SIMON_SCORE_PER_CORRECT_STEP = 200;
+const SIMON_STEP_MS = 700;
+const SIMON_INPUT_TIMEOUT_MS = 8000;
+const BUTTON_MASH_DURATION_MS = 5000;
+const AIM_DURATION_MS = 8000;
+
+/** 게임별 최대 진행 시간 (ms). 클라이언트가 어떤 이유로든 응답을 보내지 않을 때 라운드가 영원히
+ * 멈추지 않도록, 이 시간이 지나면 서버가 나서서 미제출 플레이어를 0점으로 강제 마감한다. */
+const GAME_DURATION_MS: Record<GameId, number> = {
+  buttonMash: BUTTON_MASH_DURATION_MS,
+  simonSays: SIMON_SEQUENCE_LENGTH * SIMON_STEP_MS + SIMON_INPUT_TIMEOUT_MS,
+  aimClick: AIM_DURATION_MS,
+};
+const ROUND_SAFETY_BUFFER_MS = 3000;
 
 interface ConnState {
   roomCode: string | null;
@@ -18,30 +48,100 @@ function send(socket: WebSocket, message: ServerMessage) {
   if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message));
 }
 
+function broadcastToRoom(room: Room, message: ServerMessage) {
+  send(room.hostSocket, message);
+  for (const p of room.players.values()) send(p.socket, message);
+}
+
 function broadcastPlayerList(room: Room) {
   const players = Array.from(room.players.values()).map((p) => ({
     id: p.id,
     name: p.name,
     color: p.color,
   }));
-  send(room.hostSocket, { type: 'player_list', players });
-  for (const p of room.players.values()) send(p.socket, { type: 'player_list', players });
+  broadcastToRoom(room, { type: 'player_list', players });
 }
 
-function buildResults(room: Room): PlayerResult[] {
-  return Array.from(room.players.values())
-    .map((p) => ({ id: p.id, name: p.name, color: p.color, score: p.score, maxCombo: p.maxCombo }))
-    .sort((a, b) => b.score - a.score);
+function startNextRound(room: Room) {
+  room.currentRoundIndex += 1;
+
+  if (room.currentRoundIndex >= room.sessionGames.length) {
+    finishSession(room);
+    return;
+  }
+
+  const gameId = room.sessionGames[room.currentRoundIndex];
+  room.roundFinishedPlayerIds = new Set();
+  room.roundScores = new Map();
+  room.currentSimonSequence =
+    gameId === 'simonSays' ? generateSimonSequence(SIMON_SEQUENCE_LENGTH, SIMON_COLOR_COUNT) : null;
+
+  const startAnchorServerTime = Date.now() + ROUND_LEAD_MS;
+
+  const playerMessage: ServerMessage = {
+    type: 'round_starting',
+    gameId,
+    roundIndex: room.currentRoundIndex,
+    totalRounds: room.sessionGames.length,
+    startAnchorServerTime,
+  };
+  for (const p of room.players.values()) send(p.socket, playerMessage);
+
+  send(room.hostSocket, {
+    ...playerMessage,
+    simonSequence: room.currentSimonSequence ?? undefined,
+  });
+
+  const roundIndexAtSchedule = room.currentRoundIndex;
+  const safetyMs = ROUND_LEAD_MS + GAME_DURATION_MS[gameId] + ROUND_SAFETY_BUFFER_MS;
+  setTimeout(() => {
+    if (rooms.get(room.code) !== room) return; // 그 사이 방이 닫혔으면 아무것도 하지 않는다
+    if (room.currentRoundIndex !== roundIndexAtSchedule) return; // 이미 정상적으로 다음 라운드로 넘어갔다
+    for (const p of room.players.values()) {
+      finalizePlayerRound(room, p.id, 0);
+    }
+  }, safetyMs);
 }
 
-function maybeFinishGame(room: Room) {
-  if (room.phase !== 'playing') return;
-  if (room.finishedPlayerIds.size < room.players.size) return;
+function finalizePlayerRound(room: Room, playerId: string, roundScore: number) {
+  if (room.roundFinishedPlayerIds.has(playerId)) return;
+  room.roundFinishedPlayerIds.add(playerId);
+  room.roundScores.set(playerId, roundScore);
 
+  const player = room.players.get(playerId);
+  if (player) player.totalScore += roundScore;
+
+  maybeFinishRound(room);
+}
+
+function maybeFinishRound(room: Room) {
+  if (room.roundFinishedPlayerIds.size < room.players.size) return;
+
+  const entries: RoundResultEntry[] = Array.from(room.players.values())
+    .map((p) => ({
+      playerId: p.id,
+      name: p.name,
+      color: p.color,
+      roundScore: room.roundScores.get(p.id) ?? 0,
+      totalScore: p.totalScore,
+    }))
+    .sort((a, b) => b.totalScore - a.totalScore);
+
+  broadcastToRoom(room, { type: 'round_result', entries });
+
+  setTimeout(() => {
+    if (rooms.get(room.code) !== room) return; // 그 사이 방이 닫혔으면 진행하지 않는다
+    startNextRound(room);
+  }, ROUND_RESULT_DISPLAY_MS);
+}
+
+function finishSession(room: Room) {
   room.phase = 'finished';
-  const results = buildResults(room);
-  send(room.hostSocket, { type: 'game_finished', results });
-  for (const p of room.players.values()) send(p.socket, { type: 'game_finished', results });
+  const entries: SessionResultEntry[] = Array.from(room.players.values())
+    .map((p) => ({ playerId: p.id, name: p.name, color: p.color, totalScore: p.totalScore }))
+    .sort((a, b) => b.totalScore - a.totalScore);
+
+  broadcastToRoom(room, { type: 'session_finished', entries });
 }
 
 wss.on('connection', (socket) => {
@@ -68,8 +168,7 @@ wss.on('connection', (socket) => {
           broadcastPlayerList(room);
         } else {
           player.connected = false;
-          room.finishedPlayerIds.add(state.playerId);
-          maybeFinishGame(room);
+          finalizePlayerRound(room, state.playerId, 0);
         }
       }
     }
@@ -120,9 +219,7 @@ wss.on('connection', (socket) => {
           color,
           socket,
           connected: true,
-          score: 0,
-          combo: 0,
-          maxCombo: 0,
+          totalScore: 0,
         });
         state.roomCode = room.code;
         state.role = 'player';
@@ -138,69 +235,53 @@ wss.on('connection', (socket) => {
         break;
       }
 
-      case 'select_song': {
+      case 'start_session': {
         const room = currentRoom();
-        if (!room || state.role !== 'host') return;
-        room.chartId = msg.chartId;
-        for (const p of room.players.values()) {
-          send(p.socket, { type: 'song_selected', chartId: msg.chartId });
-        }
-        break;
-      }
-
-      case 'start_game': {
-        const room = currentRoom();
-        if (!room || state.role !== 'host' || !room.chartId) return;
+        if (!room || state.role !== 'host' || room.players.size === 0) return;
 
         room.phase = 'playing';
-        room.finishedPlayerIds.clear();
-        for (const p of room.players.values()) {
-          p.score = 0;
-          p.combo = 0;
-          p.maxCombo = 0;
-        }
+        room.sessionGames = shuffledGames();
+        room.currentRoundIndex = -1;
+        for (const p of room.players.values()) p.totalScore = 0;
 
-        const startMessage: ServerMessage = {
-          type: 'game_starting',
-          chartId: room.chartId,
-          startAnchorServerTime: msg.startAnchorServerTime,
-        };
-        send(room.hostSocket, startMessage);
-        for (const p of room.players.values()) send(p.socket, startMessage);
+        startNextRound(room);
         break;
       }
 
-      case 'player_update': {
+      case 'round_live_score': {
         const room = currentRoom();
         if (!room || state.role !== 'player' || !state.playerId) return;
-        const player = room.players.get(state.playerId);
-        if (!player) return;
-
-        player.score = msg.score;
-        player.combo = msg.combo;
-        player.maxCombo = Math.max(player.maxCombo, msg.combo);
-        const updateMessage: ServerMessage = {
-          type: 'player_update',
+        broadcastToRoom(room, {
+          type: 'round_live_update',
           playerId: state.playerId,
-          score: player.score,
-          combo: player.combo,
-        };
-        // 호스트뿐 아니라 참가자 전원에게도 알려서 각자 화면에서 실시간 순위를 볼 수 있게 한다.
-        send(room.hostSocket, updateMessage);
-        for (const p of room.players.values()) send(p.socket, updateMessage);
+          score: msg.score,
+        });
         break;
       }
 
-      case 'player_finished': {
+      case 'round_score': {
         const room = currentRoom();
         if (!room || state.role !== 'player' || !state.playerId) return;
-        const player = room.players.get(state.playerId);
-        if (!player) return;
+        finalizePlayerRound(room, state.playerId, msg.score);
+        break;
+      }
 
-        player.score = msg.score;
-        player.maxCombo = Math.max(player.maxCombo, msg.maxCombo);
-        room.finishedPlayerIds.add(state.playerId);
-        maybeFinishGame(room);
+      case 'simon_guess': {
+        const room = currentRoom();
+        if (!room || state.role !== 'player' || !state.playerId) return;
+        const answer = room.currentSimonSequence ?? [];
+
+        let correctPrefix = 0;
+        for (let i = 0; i < msg.sequence.length && i < answer.length; i++) {
+          if (msg.sequence[i] !== answer[i]) break;
+          correctPrefix += 1;
+        }
+        const fullyCorrect = correctPrefix === answer.length && msg.sequence.length === answer.length;
+        const roundScore = fullyCorrect
+          ? SIMON_SCORE_PER_CORRECT_STEP * answer.length
+          : correctPrefix * SIMON_SCORE_PER_CORRECT_STEP;
+
+        finalizePlayerRound(room, state.playerId, roundScore);
         break;
       }
 

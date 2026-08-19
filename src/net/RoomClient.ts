@@ -1,13 +1,26 @@
-import type { ClientMessage, PlayerInfo, PlayerResult, ServerMessage } from './protocol';
+import type {
+  ClientMessage,
+  GameId,
+  PlayerInfo,
+  RoundResultEntry,
+  SessionResultEntry,
+  ServerMessage,
+} from './protocol';
 
 export interface RoomClientCallbacks {
   onRoomCreated?: (roomCode: string) => void;
   onRoomJoined?: (roomCode: string, playerId: string, color: string) => void;
   onPlayerList?: (players: PlayerInfo[]) => void;
-  onSongSelected?: (chartId: string) => void;
-  onGameStarting?: (chartId: string, startAnchorServerTime: number) => void;
-  onPlayerUpdate?: (playerId: string, score: number, combo: number) => void;
-  onGameFinished?: (results: PlayerResult[]) => void;
+  onRoundStarting?: (
+    gameId: GameId,
+    roundIndex: number,
+    totalRounds: number,
+    startAnchorServerTime: number,
+    simonSequence?: number[],
+  ) => void;
+  onRoundLiveUpdate?: (playerId: string, score: number) => void;
+  onRoundResult?: (entries: RoundResultEntry[]) => void;
+  onSessionFinished?: (entries: SessionResultEntry[]) => void;
   onRoomClosed?: (reason: string) => void;
   onError?: (message: string) => void;
   onDisconnected?: () => void;
@@ -21,8 +34,8 @@ const PING_INTERVAL_MS = 400;
  * 콜백을 통해서만 UI에 결과를 알린다.
  *
  * serverTimeOffset은 "내 로컬 시계 + offset ≈ 서버 시계"가 되도록 핑퐁으로 추정한 값이다.
- * 모든 기기가 이 offset을 이용해 songTime = (now() - startAnchorServerTime) / 1000 을
- * 계산하면, 서로 다른 기기에서도 같은 순간에 같은 신호를 보게 된다.
+ * 모든 기기가 이 offset을 이용해 진행 시각을 startAnchorServerTime과 비교하면,
+ * 서로 다른 기기에서도 같은 순간에 같은 신호를 보게 된다.
  */
 export class RoomClient {
   private socket: WebSocket | null = null;
@@ -75,20 +88,20 @@ export class RoomClient {
     this.send({ type: 'join_room', roomCode, name });
   }
 
-  selectSong(chartId: string) {
-    this.send({ type: 'select_song', chartId });
+  startSession() {
+    this.send({ type: 'start_session' });
   }
 
-  startGame(startAnchorServerTime: number) {
-    this.send({ type: 'start_game', startAnchorServerTime });
+  reportLiveScore(score: number) {
+    this.send({ type: 'round_live_score', score });
   }
 
-  reportUpdate(score: number, combo: number) {
-    this.send({ type: 'player_update', score, combo });
+  reportRoundScore(score: number) {
+    this.send({ type: 'round_score', score });
   }
 
-  reportFinished(score: number, maxCombo: number) {
-    this.send({ type: 'player_finished', score, maxCombo });
+  submitSimonGuess(sequence: number[]) {
+    this.send({ type: 'simon_guess', sequence });
   }
 
   leaveRoom() {
@@ -139,17 +152,23 @@ export class RoomClient {
       case 'pong':
         this.recordPong(message.t0, message.serverTime);
         break;
-      case 'song_selected':
-        this.callbacks.onSongSelected?.(message.chartId);
+      case 'round_starting':
+        this.callbacks.onRoundStarting?.(
+          message.gameId,
+          message.roundIndex,
+          message.totalRounds,
+          message.startAnchorServerTime,
+          message.simonSequence,
+        );
         break;
-      case 'game_starting':
-        this.callbacks.onGameStarting?.(message.chartId, message.startAnchorServerTime);
+      case 'round_live_update':
+        this.callbacks.onRoundLiveUpdate?.(message.playerId, message.score);
         break;
-      case 'player_update':
-        this.callbacks.onPlayerUpdate?.(message.playerId, message.score, message.combo);
+      case 'round_result':
+        this.callbacks.onRoundResult?.(message.entries);
         break;
-      case 'game_finished':
-        this.callbacks.onGameFinished?.(message.results);
+      case 'session_finished':
+        this.callbacks.onSessionFinished?.(message.entries);
         break;
       case 'room_closed':
         this.callbacks.onRoomClosed?.(message.reason);

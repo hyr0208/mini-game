@@ -116,11 +116,6 @@
   opacity: 0.6;
 }
 
-.role-card-solo:hover:not(:disabled) {
-  border-color: rgba(255, 209, 93, 0.6);
-  background: #201d14;
-}
-
 .role-card-host:hover:not(:disabled) {
   border-color: rgba(255, 93, 143, 0.6);
   background: #1c1520;
@@ -145,10 +140,6 @@
 .role-card-icon svg {
   width: 22px;
   height: 22px;
-}
-
-.role-card-solo .role-card-icon {
-  color: #ffd15d;
 }
 
 .role-card-host .role-card-icon {
@@ -195,127 +186,21 @@
   border: 1px solid #3a3a4a;
 }
 
-/* --- 곡 선택 --- */
-.song-select-screen {
-  max-width: 420px;
-}
-
-.song-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.song-button {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 14px 18px;
-  border-radius: 12px;
-  border: 1px solid #2a2a3a;
-  background: #14141f;
-  color: #e6e6f0;
-  text-align: left;
-}
-
-.song-button:hover {
-  border-color: #5dd6ff;
-}
-
-.song-title {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.song-meta {
-  font-size: 13px;
-  color: #9a9ab0;
-}
-
-/* --- 게임 화면 (태고 스타일 가로 트랙) --- */
+/* --- 게임 화면 --- */
 .game-screen {
   position: relative;
   width: min(94vw, 900px);
   max-width: 900px;
   height: min(60vw, 70svh, 480px);
-  padding: 0;
+  padding: 24px;
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid #2a2a3a;
 }
 
-.game-canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.hud {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-}
-
-.hud-scoreboard {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  justify-content: center;
-}
-
-.hud-player-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.35);
-  font-variant-numeric: tabular-nums;
-}
-
 .hud-player-name {
   font-weight: 700;
   color: #e6e6f0;
-}
-
-.hud-player-score {
-  font-weight: 700;
-  color: #fff;
-}
-
-.hud-player-combo {
-  font-size: 12px;
-  color: #ffd15d;
-}
-
-.hud-rank-chip {
-  align-self: center;
-  margin-top: 6px;
-  padding: 4px 14px;
-  border-radius: 999px;
-  background: rgba(255, 209, 93, 0.15);
-  border: 1px solid rgba(255, 209, 93, 0.4);
-  color: #ffd15d;
-  font-weight: 700;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-}
-
-.hud-loading {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #9a9ab0;
 }
 
 /* --- 방 코드 / 폼 --- */
@@ -346,11 +231,6 @@
   color: #ff5d8f;
   font-size: 14px;
   margin: 0;
-}
-
-.song-button.active {
-  border-color: #ffd15d;
-  background: #1c2230;
 }
 
 .player-key-list {
@@ -434,70 +314,10 @@
   color: #9a9ab0;
 }
 
-/* --- 혼자하기 결과 --- */
-.result-score {
-  font-size: 40px;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.result-combo {
-  color: #ffd15d;
-  font-weight: 600;
-}
-
-.result-counts {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 24px;
-  color: #c9c9d8;
-}
-
 .result-actions {
   display: flex;
   gap: 12px;
   margin-top: 8px;
-}
-
-/* --- 판정 팝업 (플레이어 화면) --- */
-.hud-judgement {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 2px;
-  animation: fade-out 0.5s ease-out forwards;
-  pointer-events: none;
-}
-
-.judgement-perfect {
-  color: #ffd15d;
-}
-.judgement-great {
-  color: #5dd6ff;
-}
-.judgement-good {
-  color: #8bff5d;
-}
-.judgement-miss {
-  color: #ff5d8f;
-}
-
-@keyframes fade-out {
-  from {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.1);
-  }
-  to {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1);
-  }
 }
 
 /* --- 플레이어 자신의 기기 화면: 폰 화면을 꽉 채운다 --- */
@@ -507,4 +327,187 @@
   max-width: none;
   border-radius: 0;
   border: none;
+}
+
+/* --- 미니게임 공통 --- */
+.minigame-host-view,
+.minigame-player-view {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+  padding: 24px;
+}
+
+.minigame-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.minigame-countdown {
+  font-size: 72px;
+  font-weight: 800;
+  color: #ffd15d;
+  font-variant-numeric: tabular-nums;
+}
+
+.minigame-go {
+  font-size: 40px;
+  font-weight: 800;
+  color: #ff5d8f;
+  letter-spacing: 2px;
+}
+
+.minigame-timer-track {
+  width: min(100%, 320px);
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.minigame-timer-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff5d8f, #ffd15d);
+  transition: width 0.05s linear;
+}
+
+.minigame-waiting {
+  color: #9a9ab0;
+  font-size: 14px;
+}
+
+.minigame-tap-count {
+  font-size: 32px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+
+.minigame-live-board {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.minigame-live-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.minigame-live-row .hud-player-name {
+  flex: 1;
+  text-align: left;
+}
+
+.minigame-live-score {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #ffd15d;
+}
+
+.minigame-round-indicator {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #9a9ab0;
+  letter-spacing: 1px;
+}
+
+/* --- 버튼 마쉬 --- */
+.mash-button {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #ff5d8f, #ffd15d);
+  color: #0b0b14;
+  font-size: 24px;
+  font-weight: 800;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.mash-button:active {
+  transform: scale(0.95);
+}
+
+/* --- 조준 클릭 --- */
+.aim-click-view {
+  position: relative;
+  padding: 0;
+}
+
+.aim-target {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  background: radial-gradient(circle at 35% 35%, #ffd15d, #ff5d8f);
+  touch-action: manipulation;
+}
+
+/* --- 순서 암기 --- */
+.simon-board {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: min(100%, 260px);
+}
+
+.simon-pad {
+  aspect-ratio: 1;
+  border-radius: 16px;
+  border: none;
+  opacity: 0.35;
+  transition: opacity 0.1s ease;
+  touch-action: manipulation;
+}
+
+.simon-pad.lit {
+  opacity: 1;
+  box-shadow: 0 0 24px currentColor;
+}
+
+.simon-pad-button:not(:disabled) {
+  opacity: 1;
+}
+
+.simon-pad-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.simon-pad-button:disabled {
+  opacity: 0.35;
+}
+
+.simon-guess-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.simon-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+}
+
+.simon-dot.filled {
+  background: #ffd15d;
+  border-color: #ffd15d;
 }

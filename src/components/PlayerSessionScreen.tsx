@@ -1,0 +1,83 @@
+import type { RoomClient } from '../net/RoomClient';
+import type { RoundResultEntry, SessionResultEntry } from '../net/protocol';
+import { ButtonMashPlayerView } from '../minigames/buttonMash/PlayerView';
+import { SimonSaysPlayerView } from '../minigames/simonSays/PlayerView';
+import { AimClickPlayerView } from '../minigames/aimClick/PlayerView';
+import { RoundResultBoard } from '../minigames/RoundResultBoard';
+import { SessionResultBoard } from '../minigames/SessionResultBoard';
+import type { RoundData, SubPhase } from './HostSessionScreen';
+
+interface Props {
+  client: RoomClient;
+  myPlayerId: string;
+  subPhase: SubPhase;
+  roundData: RoundData | null;
+  roundResultEntries: RoundResultEntry[] | null;
+  sessionEntries: SessionResultEntry[] | null;
+  onExit: () => void;
+}
+
+/**
+ * 참가자 자신의 기기 화면. 세션(여러 라운드) 동안 계속 마운트되어 있으며,
+ * 라운드/결과 상태는 App이 방 참가 시점에 한 번 등록한 콜백으로 갱신되는 값을
+ * 그대로 전달받아 그리기만 한다 (HostSessionScreen과 같은 이유).
+ */
+export function PlayerSessionScreen({
+  client,
+  myPlayerId,
+  subPhase,
+  roundData,
+  roundResultEntries,
+  sessionEntries,
+  onExit,
+}: Props) {
+  if (subPhase === 'round' && roundData) {
+    return (
+      <div className="screen player-game-screen">
+        {roundData.gameId === 'buttonMash' && (
+          <ButtonMashPlayerView
+            client={client}
+            getNow={() => client.now()}
+            startAnchorServerTime={roundData.startAnchorServerTime}
+          />
+        )}
+        {roundData.gameId === 'aimClick' && (
+          <AimClickPlayerView
+            client={client}
+            getNow={() => client.now()}
+            startAnchorServerTime={roundData.startAnchorServerTime}
+          />
+        )}
+        {roundData.gameId === 'simonSays' && (
+          <SimonSaysPlayerView
+            client={client}
+            getNow={() => client.now()}
+            startAnchorServerTime={roundData.startAnchorServerTime}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (subPhase === 'roundResult' && roundResultEntries && roundData) {
+    return (
+      <RoundResultBoard
+        entries={roundResultEntries}
+        myPlayerId={myPlayerId}
+        roundIndex={roundData.roundIndex}
+        totalRounds={roundData.totalRounds}
+      />
+    );
+  }
+
+  if (subPhase === 'sessionFinished' && sessionEntries) {
+    return <SessionResultBoard entries={sessionEntries} myPlayerId={myPlayerId} onExit={onExit} />;
+  }
+
+  return (
+    <div className="screen">
+      <h2>대기 중</h2>
+      <p className="subtitle">호스트가 미니게임 나이트를 시작하길 기다리는 중...</p>
+    </div>
+  );
+}

@@ -3,28 +3,37 @@
  * 별도 패키지라 공유 임포트 대신 수동으로 복제해서 관리한다.
  */
 
+export type GameId = 'buttonMash' | 'simonSays' | 'aimClick';
+
 export interface PlayerInfo {
   id: string;
   name: string;
   color: string;
 }
 
-export interface PlayerResult {
-  id: string;
+export interface RoundResultEntry {
+  playerId: string;
   name: string;
   color: string;
-  score: number;
-  maxCombo: number;
+  roundScore: number;
+  totalScore: number;
+}
+
+export interface SessionResultEntry {
+  playerId: string;
+  name: string;
+  color: string;
+  totalScore: number;
 }
 
 export type ClientMessage =
   | { type: 'create_room' }
   | { type: 'join_room'; roomCode: string; name: string }
   | { type: 'ping'; t0: number }
-  | { type: 'select_song'; chartId: string }
-  | { type: 'start_game'; startAnchorServerTime: number }
-  | { type: 'player_update'; score: number; combo: number }
-  | { type: 'player_finished'; score: number; maxCombo: number }
+  | { type: 'start_session' }
+  | { type: 'round_live_score'; score: number }
+  | { type: 'round_score'; score: number }
+  | { type: 'simon_guess'; sequence: number[] }
   | { type: 'leave_room' };
 
 export type ServerMessage =
@@ -32,9 +41,17 @@ export type ServerMessage =
   | { type: 'room_joined'; roomCode: string; playerId: string; color: string }
   | { type: 'player_list'; players: PlayerInfo[] }
   | { type: 'pong'; t0: number; serverTime: number }
-  | { type: 'song_selected'; chartId: string }
-  | { type: 'game_starting'; chartId: string; startAnchorServerTime: number }
-  | { type: 'player_update'; playerId: string; score: number; combo: number }
-  | { type: 'game_finished'; results: PlayerResult[] }
+  | {
+      type: 'round_starting';
+      gameId: GameId;
+      roundIndex: number;
+      totalRounds: number;
+      startAnchorServerTime: number;
+      /** simonSays 라운드에서만, 호스트에게만 실려온다 */
+      simonSequence?: number[];
+    }
+  | { type: 'round_live_update'; playerId: string; score: number }
+  | { type: 'round_result'; entries: RoundResultEntry[] }
+  | { type: 'session_finished'; entries: SessionResultEntry[] }
   | { type: 'room_closed'; reason: string }
   | { type: 'error'; message: string };
