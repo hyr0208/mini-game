@@ -15,12 +15,10 @@ interface Props {
 export function PlayerLobby({ roomCode, players, myPlayerId }: Props) {
   return (
     <div className="screen player-lobby-screen">
-      <h2>대기실</h2>
+      <div className="lobby-topline"><span className="brand-lockup"><span className="brand-mark">✦</span> PLAYLOOP</span><span className="live-pill"><span /> PLAYER MODE</span></div>
+      <div className="section-heading"><span className="eyebrow">YOU'RE IN</span><h2>게임이 곧 시작돼요</h2><p className="subtitle">호스트가 시작 버튼을 누르면 첫 라운드가 열립니다.</p></div>
       <div className="room-code">{roomCode}</div>
-      <p className="subtitle">호스트가 미니게임 나이트를 시작하길 기다리는 중...</p>
-      <p className="subtitle">
-        {GAME_LABEL.timingRelay} · {GAME_LABEL.syncBuild}
-      </p>
+      <div className="lobby-deck"><span className="eyebrow">TONIGHT'S DECK</span><strong>{GAME_LABEL.timingRelay} · {GAME_LABEL.syncBuild} · 코인 러시</strong><small>3 라운드 · 행운을 빌어요!</small></div>
 
       <ul className="player-key-list">
         {players.map((player) => (

@@ -8,6 +8,7 @@ import type {
 } from '../net/protocol';
 import { TimingRelayHostView } from '../minigames/timingRelay/HostView';
 import { SyncBuildHostView } from '../minigames/syncBuild/HostView';
+import { CoinRushHostView } from '../minigames/coinRush/HostView';
 import { RoundResultBoard } from '../minigames/RoundResultBoard';
 import { SessionResultBoard } from '../minigames/SessionResultBoard';
 
@@ -69,6 +70,13 @@ export function HostSessionScreen({
             beatCount={roundData.beatCount ?? 0}
             beatIntervalMs={roundData.beatIntervalMs ?? 0}
             beatPlan={roundData.beatPlan ?? []}
+            players={players}
+          />
+        )}
+        {roundData.gameId === 'coinRush' && (
+          <CoinRushHostView
+            getNow={getNow}
+            startAnchorServerTime={roundData.startAnchorServerTime}
             players={players}
           />
         )}

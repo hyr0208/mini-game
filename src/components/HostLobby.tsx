@@ -37,9 +37,9 @@ export function HostLobby({ client, roomCode, players, onStart, onExit }: Props)
 
   return (
     <div className="screen host-lobby-screen">
-      <h2>호스트 대기실</h2>
-      {roomCode ? <div className="room-code">{roomCode}</div> : <p className="subtitle">방 만드는 중...</p>}
-      <p className="subtitle">다른 기기에서 이 코드로 참가해요 (최대 4명, 빈 자리는 봇이 채워요)</p>
+      <div className="lobby-topline"><span className="brand-lockup"><span className="brand-mark">✦</span> PLAYLOOP</span><span className="live-pill"><span /> HOST MODE</span></div>
+      <div className="section-heading"><span className="eyebrow">ROOM READY</span><h2>친구를 초대하세요</h2><p className="subtitle">아래 코드를 공유하면 바로 같은 게임에 들어와요.</p></div>
+      {roomCode ? <div className="room-code"><span>ROOM CODE</span>{roomCode}</div> : <p className="subtitle">방 만드는 중...</p>}
 
       <ul className="player-key-list">
         {players.length === 0 && <li className="player-key-item">아직 참가자가 없어요</li>}
@@ -56,14 +56,12 @@ export function HostLobby({ client, roomCode, players, onStart, onExit }: Props)
         )}
       </ul>
 
-      <p className="subtitle">
-        {GAME_LABEL.timingRelay} · {GAME_LABEL.syncBuild} — 랜덤 순서로 연속 진행돼요
-      </p>
+      <div className="lobby-deck"><span className="eyebrow">TONIGHT'S DECK</span><strong>{GAME_LABEL.timingRelay} · {GAME_LABEL.syncBuild} · 코인 러시</strong><small>3 라운드가 랜덤 순서로 이어져요</small></div>
 
       {error && <p className="error-text">{error}</p>}
 
       <button type="button" className="primary-button" onClick={handleStart}>
-        미니게임 나이트 시작
+        게임 시작 <span>↗</span>
       </button>
       <button type="button" className="secondary-button" onClick={onExit}>
         나가기

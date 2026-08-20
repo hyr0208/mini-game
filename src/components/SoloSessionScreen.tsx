@@ -15,12 +15,15 @@ import {
   ROUND_LEAD_MS,
   SYNC_SCORE_TABLE,
   TURN_DURATION_MS,
+  COIN_RUSH_SCORE_PER_COIN,
   judgeFromAbsDeltaMs,
 } from '../minigames/constants';
 import { TimingRelayHostView } from '../minigames/timingRelay/HostView';
 import { TimingRelayPlayerView } from '../minigames/timingRelay/PlayerView';
 import { SyncBuildHostView } from '../minigames/syncBuild/HostView';
 import { SyncBuildPlayerView } from '../minigames/syncBuild/PlayerView';
+import { CoinRushHostView } from '../minigames/coinRush/HostView';
+import { CoinRushPlayerView } from '../minigames/coinRush/PlayerView';
 import { RoundResultBoard } from '../minigames/RoundResultBoard';
 import { SessionResultBoard } from '../minigames/SessionResultBoard';
 
@@ -67,7 +70,7 @@ export function SoloSessionScreen({ onExit }: Props) {
 
   const botsRef = useRef<LocalBot[]>(createLocalBots(3, new Set([HUMAN_COLOR])));
   const humanTotalRef = useRef(0);
-  const gamesRef = useRef<GameId[]>(shuffle<GameId>(['timingRelay', 'syncBuild']));
+  const gamesRef = useRef<GameId[]>(shuffle<GameId>(['timingRelay', 'syncBuild', 'coinRush']));
   const roundIndexRef = useRef(-1);
   const roundScoresRef = useRef(new Map<string, number>());
   const finishedRef = useRef(new Set<string>());
@@ -171,7 +174,7 @@ export function SoloSessionScreen({ onExit }: Props) {
 
       const mine = plan.find((e) => e.participantId === HUMAN_ID);
       setRoundData({ gameId, startAnchorServerTime, turnPlan: plan, myTurnOffsetMs: mine?.turnStartOffsetMs ?? 0 });
-    } else {
+    } else if (gameId === 'syncBuild') {
       const beatPlan: BeatPlanEntry[] = botsRef.current.map((bot) => ({
         participantId: bot.id,
         name: bot.name,
@@ -193,6 +196,17 @@ export function SoloSessionScreen({ onExit }: Props) {
         beatIntervalMs: BEAT_INTERVAL_MS,
         beatPlan,
       });
+    } else {
+      const participants = [
+        { id: HUMAN_ID, name: HUMAN_NAME, color: HUMAN_COLOR, isBot: false as const, skill: 1 },
+        ...botsRef.current.map((b) => ({ id: b.id, name: b.name, color: b.color, isBot: true as const, skill: b.skill })),
+      ];
+      for (const participant of participants) {
+        if (!participant.isBot) continue;
+        const coins = Math.max(3, Math.round(4 + participant.skill * 7 + (Math.random() - 0.5) * 3));
+        finalizeParticipant(participant.id, coins * COIN_RUSH_SCORE_PER_COIN);
+      }
+      setRoundData({ gameId, startAnchorServerTime });
     }
     setSubPhase('round');
   };
@@ -246,6 +260,20 @@ export function SoloSessionScreen({ onExit }: Props) {
               startAnchorServerTime={roundData.startAnchorServerTime}
               beatCount={roundData.beatCount ?? 0}
               beatIntervalMs={roundData.beatIntervalMs ?? 0}
+            />
+          </>
+        )}
+        {roundData.gameId === 'coinRush' && (
+          <>
+            <CoinRushHostView
+              getNow={getNow}
+              startAnchorServerTime={roundData.startAnchorServerTime}
+              players={[{ id: HUMAN_ID, name: HUMAN_NAME, color: HUMAN_COLOR }]}
+            />
+            <CoinRushPlayerView
+              client={clientRef.current}
+              getNow={getNow}
+              startAnchorServerTime={roundData.startAnchorServerTime}
             />
           </>
         )}

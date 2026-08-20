@@ -17,7 +17,13 @@ import {
   type Room,
 } from './rooms.js';
 import { createBots, simulateBotDeltaMs } from './bots.js';
-import { RELAY_SCORE_TABLE, SYNC_SCORE_TABLE, judgeFromAbsDeltaMs } from './scoring.js';
+import {
+  COIN_RUSH_DURATION_MS,
+  COIN_RUSH_SCORE_PER_COIN,
+  RELAY_SCORE_TABLE,
+  SYNC_SCORE_TABLE,
+  judgeFromAbsDeltaMs,
+} from './scoring.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const wss = new WebSocketServer({ port: PORT });
@@ -192,6 +198,34 @@ function startSyncBuildRound(room: Room, startAnchorServerTime: number): number 
   return BEAT_COUNT * BEAT_INTERVAL_MS;
 }
 
+function startCoinRushRound(room: Room, startAnchorServerTime: number): number {
+  const roundIndex = room.currentRoundIndex;
+  const totalRounds = room.sessionGames.length;
+  send(room.hostSocket, {
+    type: 'round_starting',
+    gameId: 'coinRush',
+    roundIndex,
+    totalRounds,
+    startAnchorServerTime,
+  });
+  for (const player of room.players.values()) {
+    send(player.socket, {
+      type: 'round_starting',
+      gameId: 'coinRush',
+      roundIndex,
+      totalRounds,
+      startAnchorServerTime,
+    });
+  }
+
+  for (const bot of room.bots.values()) {
+    const coins = Math.max(3, Math.round(4 + bot.skill * 7 + (Math.random() - 0.5) * 3));
+    finalizePlayerRound(room, bot.id, coins * COIN_RUSH_SCORE_PER_COIN);
+  }
+
+  return COIN_RUSH_DURATION_MS;
+}
+
 function startNextRound(room: Room) {
   room.currentRoundIndex += 1;
 
@@ -208,7 +242,9 @@ function startNextRound(room: Room) {
   const activeDurationMs =
     gameId === 'timingRelay'
       ? startTimingRelayRound(room, startAnchorServerTime)
-      : startSyncBuildRound(room, startAnchorServerTime);
+      : gameId === 'syncBuild'
+        ? startSyncBuildRound(room, startAnchorServerTime)
+        : startCoinRushRound(room, startAnchorServerTime);
 
   const roundIndexAtSchedule = room.currentRoundIndex;
   const safetyMs = ROUND_LEAD_MS + activeDurationMs + ROUND_SAFETY_BUFFER_MS;

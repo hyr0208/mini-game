@@ -21,6 +21,9 @@ export const SYNC_SCORE_TABLE: Record<Judgement, number> = {
   miss: 0,
 };
 
+export const COIN_RUSH_DURATION_MS = 8000;
+export const COIN_RUSH_SCORE_PER_COIN = 50;
+
 export function judgeFromAbsDeltaMs(absDeltaMs: number): Judgement {
   if (absDeltaMs <= HIT_WINDOWS_MS.perfect) return 'perfect';
   if (absDeltaMs <= HIT_WINDOWS_MS.great) return 'great';

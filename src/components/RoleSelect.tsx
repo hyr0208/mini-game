@@ -9,51 +9,59 @@ interface Props {
 export function RoleSelect({ onSolo, onHost, onJoin, connecting, error }: Props) {
   return (
     <div className="screen menu-screen">
-      <div className="menu-hero">
-        <div className="menu-hero-ring menu-hero-ring-outer" />
-        <div className="menu-hero-ring menu-hero-ring-inner" />
-        <h1 className="title">PARTY</h1>
+      <div className="menu-topline">
+        <span className="brand-lockup"><span className="brand-mark">✦</span> PLAYLOOP</span>
+        <span className="live-pill"><span /> LIVE ARCADE</span>
       </div>
-      <p className="subtitle">혼자서도, 친구들과 함께도 — 미니게임 나이트</p>
+
+      <div className="menu-hero">
+        <div className="hero-sticker hero-sticker-yellow">READY?</div>
+        <div className="hero-sticker hero-sticker-pink">3 GAMES</div>
+        <div className="menu-hero-orbit orbit-one" />
+        <div className="menu-hero-orbit orbit-two" />
+        <div className="menu-hero-orb"><span>PLAY</span><strong>LOOP</strong></div>
+      </div>
+      <div className="menu-copy">
+        <p className="eyebrow">오늘 밤의 승부는 여기서</p>
+        <h1 className="title">누가 제일<br /><em>잘 놀아요?</em></h1>
+        <p className="subtitle">혼자서 연습해도, 친구들과 겨뤄도 좋아요.<br />짧고 강한 미니게임 3개가 바로 시작됩니다.</p>
+      </div>
+
+      <div className="game-showcase">
+        <div className="showcase-heading"><span>오늘의 게임 덱</span><small>3 ROUNDS · 4 PLAYERS</small></div>
+        <div className="game-grid">
+          <div className="game-card game-card-pink"><span className="game-card-icon">◌</span><strong>타이밍<br />릴레이</strong><small>딱 맞춰 누르기</small></div>
+          <div className="game-card game-card-blue"><span className="game-card-icon">▥</span><strong>다같이<br />완성하기</strong><small>박자 맞추기</small></div>
+          <div className="game-card game-card-yellow"><span className="game-card-icon">¢</span><strong>코인<br />러시</strong><small>빠르게 탭하기</small></div>
+        </div>
+      </div>
 
       <div className="role-cards">
         <button type="button" className="role-card role-card-solo" onClick={onSolo} disabled={connecting}>
-          <span className="role-card-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="1.6" />
-              <path d="M10 8.5l6 3.5-6 3.5v-7z" fill="currentColor" />
-            </svg>
-          </span>
+          <span className="role-card-icon" aria-hidden="true">▶</span>
           <span className="role-card-body">
-            <span className="role-card-title">혼자하기</span>
-            <span className="role-card-desc">이 기기로 바로, 나머지는 봇 3명</span>
+            <span className="role-card-title">바로 플레이</span>
+            <span className="role-card-desc">이 기기 하나로 시작 · CPU 3명</span>
           </span>
+          <span className="role-card-arrow">↗</span>
         </button>
 
         <button type="button" className="role-card role-card-host" onClick={onHost} disabled={connecting}>
-          <span className="role-card-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="2.5" y="4" width="19" height="13" rx="2" stroke="currentColor" strokeWidth="1.6" />
-              <path d="M8 20.5h8M12 17v3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </span>
+          <span className="role-card-icon" aria-hidden="true">▣</span>
           <span className="role-card-body">
-            <span className="role-card-title">호스트로 시작</span>
-            <span className="role-card-desc">다같이 보는 공유 화면, 빈 자리는 봇이 채워요</span>
+            <span className="role-card-title">방 만들기</span>
+            <span className="role-card-desc">공유 화면 + 친구 기기로 함께</span>
           </span>
+          <span className="role-card-arrow">↗</span>
         </button>
 
         <button type="button" className="role-card role-card-join" onClick={onJoin} disabled={connecting}>
-          <span className="role-card-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="6.5" y="2.5" width="11" height="19" rx="2.2" stroke="currentColor" strokeWidth="1.6" />
-              <circle cx="12" cy="18" r="1" fill="currentColor" />
-            </svg>
-          </span>
+          <span className="role-card-icon" aria-hidden="true">＋</span>
           <span className="role-card-body">
-            <span className="role-card-title">참가하기</span>
-            <span className="role-card-desc">친구가 만든 방에, 내 기기로 플레이</span>
+            <span className="role-card-title">코드로 참가</span>
+            <span className="role-card-desc">친구가 만든 방에 내 기기로 접속</span>
           </span>
+          <span className="role-card-arrow">↗</span>
         </button>
       </div>
 

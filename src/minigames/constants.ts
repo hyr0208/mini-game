@@ -44,3 +44,6 @@ export const SYNC_SCORE_TABLE: Record<Judgement, number> = {
   good: 40,
   miss: 0,
 };
+
+export const COIN_RUSH_DURATION_MS = 8000;
+export const COIN_RUSH_SCORE_PER_COIN = 50;

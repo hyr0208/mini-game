@@ -4,7 +4,7 @@
  */
 
 export type Judgement = 'perfect' | 'great' | 'good' | 'miss';
-export type GameId = 'timingRelay' | 'syncBuild';
+export type GameId = 'timingRelay' | 'syncBuild' | 'coinRush';
 
 export interface PlayerInfo {
   id: string;

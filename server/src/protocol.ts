@@ -4,7 +4,7 @@
  */
 import type { Judgement } from './scoring.js';
 
-export type GameId = 'timingRelay' | 'syncBuild';
+export type GameId = 'timingRelay' | 'syncBuild' | 'coinRush';
 
 export interface PlayerInfo {
   id: string;

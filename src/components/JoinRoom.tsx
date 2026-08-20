@@ -36,15 +36,20 @@ export function JoinRoom({ client, onJoined, onBack }: Props) {
 
   return (
     <div className="screen join-room-screen">
-      <h2>참가하기</h2>
+      <div className="lobby-topline"><span className="brand-lockup"><span className="brand-mark">✦</span> PLAYLOOP</span><span className="live-pill"><span /> JOIN MODE</span></div>
+      <div className="section-heading"><span className="eyebrow">JOIN THE PARTY</span><h2>코드만 입력하면 끝</h2><p className="subtitle">친구에게 받은 방 코드와 플레이어 이름을 입력하세요.</p></div>
+      <label className="field-label" htmlFor="room-code">방 코드</label>
       <input
+        id="room-code"
         className="text-input"
         placeholder="방 코드 (예: 84TT)"
         value={roomCode}
         onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
         maxLength={4}
       />
+      <label className="field-label" htmlFor="player-name">플레이어 이름</label>
       <input
+        id="player-name"
         className="text-input"
         placeholder="이름"
         value={name}
@@ -53,7 +58,7 @@ export function JoinRoom({ client, onJoined, onBack }: Props) {
       />
       {error && <p className="error-text">{error}</p>}
       <button type="button" className="primary-button" onClick={handleJoin} disabled={connecting}>
-        {connecting ? '연결 중...' : '참가하기'}
+        {connecting ? '연결 중...' : '게임에 참가'} <span>↗</span>
       </button>
       <button type="button" className="secondary-button" onClick={onBack}>
         뒤로

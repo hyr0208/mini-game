@@ -2,6 +2,7 @@ import type { ScoreReporter } from '../net/ScoreReporter';
 import type { RoundResultEntry, SessionResultEntry } from '../net/protocol';
 import { TimingRelayPlayerView } from '../minigames/timingRelay/PlayerView';
 import { SyncBuildPlayerView } from '../minigames/syncBuild/PlayerView';
+import { CoinRushPlayerView } from '../minigames/coinRush/PlayerView';
 import { RoundResultBoard } from '../minigames/RoundResultBoard';
 import { SessionResultBoard } from '../minigames/SessionResultBoard';
 import type { RoundData, SubPhase } from './HostSessionScreen';
@@ -48,6 +49,13 @@ export function PlayerSessionScreen({
             startAnchorServerTime={roundData.startAnchorServerTime}
             beatCount={roundData.beatCount ?? 0}
             beatIntervalMs={roundData.beatIntervalMs ?? 0}
+          />
+        )}
+        {roundData.gameId === 'coinRush' && (
+          <CoinRushPlayerView
+            client={client}
+            getNow={() => client.now()}
+            startAnchorServerTime={roundData.startAnchorServerTime}
           />
         )}
       </div>

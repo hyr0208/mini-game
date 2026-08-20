@@ -68,7 +68,7 @@ export function createRoom(code: string, hostSocket: WebSocket): Room {
 }
 
 export function shuffledGames(): GameId[] {
-  const games: GameId[] = ['timingRelay', 'syncBuild'];
+  const games: GameId[] = ['timingRelay', 'syncBuild', 'coinRush'];
   for (let i = games.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [games[i], games[j]] = [games[j], games[i]];
