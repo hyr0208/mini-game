@@ -1,8 +1,13 @@
-import type { RoomClient } from '../net/RoomClient';
-import type { GameId, PlayerInfo, RoundResultEntry, SessionResultEntry } from '../net/protocol';
-import { ButtonMashHostView } from '../minigames/buttonMash/HostView';
-import { SimonSaysHostView } from '../minigames/simonSays/HostView';
-import { AimClickHostView } from '../minigames/aimClick/HostView';
+import type {
+  BeatPlanEntry,
+  GameId,
+  PlayerInfo,
+  RoundResultEntry,
+  SessionResultEntry,
+  TurnPlanEntry,
+} from '../net/protocol';
+import { TimingRelayHostView } from '../minigames/timingRelay/HostView';
+import { SyncBuildHostView } from '../minigames/syncBuild/HostView';
 import { RoundResultBoard } from '../minigames/RoundResultBoard';
 import { SessionResultBoard } from '../minigames/SessionResultBoard';
 
@@ -11,17 +16,19 @@ export interface RoundData {
   roundIndex: number;
   totalRounds: number;
   startAnchorServerTime: number;
-  simonSequence?: number[];
+  turnPlan?: TurnPlanEntry[];
+  beatCount?: number;
+  beatIntervalMs?: number;
+  beatPlan?: BeatPlanEntry[];
 }
 
 export type SubPhase = 'round' | 'roundResult' | 'sessionFinished';
 
 interface Props {
-  client: RoomClient;
+  getNow: () => number;
   players: PlayerInfo[];
   subPhase: SubPhase;
   roundData: RoundData | null;
-  liveScores: Record<string, number>;
   roundResultEntries: RoundResultEntry[] | null;
   sessionEntries: SessionResultEntry[] | null;
   onPlayAgain: () => void;
@@ -36,11 +43,10 @@ interface Props {
  * 먼저 이뤄진다.
  */
 export function HostSessionScreen({
-  client,
+  getNow,
   players,
   subPhase,
   roundData,
-  liveScores,
   roundResultEntries,
   sessionEntries,
   onPlayAgain,
@@ -49,27 +55,21 @@ export function HostSessionScreen({
   if (subPhase === 'round' && roundData) {
     return (
       <div className="screen game-screen host-game-screen">
-        {roundData.gameId === 'buttonMash' && (
-          <ButtonMashHostView
-            getNow={() => client.now()}
+        {roundData.gameId === 'timingRelay' && (
+          <TimingRelayHostView
+            getNow={getNow}
             startAnchorServerTime={roundData.startAnchorServerTime}
-            players={players}
-            liveScores={liveScores}
+            turnPlan={roundData.turnPlan ?? []}
           />
         )}
-        {roundData.gameId === 'aimClick' && (
-          <AimClickHostView
-            getNow={() => client.now()}
+        {roundData.gameId === 'syncBuild' && (
+          <SyncBuildHostView
+            getNow={getNow}
             startAnchorServerTime={roundData.startAnchorServerTime}
+            beatCount={roundData.beatCount ?? 0}
+            beatIntervalMs={roundData.beatIntervalMs ?? 0}
+            beatPlan={roundData.beatPlan ?? []}
             players={players}
-            liveScores={liveScores}
-          />
-        )}
-        {roundData.gameId === 'simonSays' && (
-          <SimonSaysHostView
-            getNow={() => client.now()}
-            startAnchorServerTime={roundData.startAnchorServerTime}
-            sequence={roundData.simonSequence ?? []}
           />
         )}
         <div className="minigame-round-indicator">

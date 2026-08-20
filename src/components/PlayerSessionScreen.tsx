@@ -1,17 +1,16 @@
-import type { RoomClient } from '../net/RoomClient';
+import type { ScoreReporter } from '../net/ScoreReporter';
 import type { RoundResultEntry, SessionResultEntry } from '../net/protocol';
-import { ButtonMashPlayerView } from '../minigames/buttonMash/PlayerView';
-import { SimonSaysPlayerView } from '../minigames/simonSays/PlayerView';
-import { AimClickPlayerView } from '../minigames/aimClick/PlayerView';
+import { TimingRelayPlayerView } from '../minigames/timingRelay/PlayerView';
+import { SyncBuildPlayerView } from '../minigames/syncBuild/PlayerView';
 import { RoundResultBoard } from '../minigames/RoundResultBoard';
 import { SessionResultBoard } from '../minigames/SessionResultBoard';
 import type { RoundData, SubPhase } from './HostSessionScreen';
 
 interface Props {
-  client: RoomClient;
+  client: ScoreReporter;
   myPlayerId: string;
   subPhase: SubPhase;
-  roundData: RoundData | null;
+  roundData: (RoundData & { myTurnOffsetMs?: number }) | null;
   roundResultEntries: RoundResultEntry[] | null;
   sessionEntries: SessionResultEntry[] | null;
   onExit: () => void;
@@ -34,25 +33,21 @@ export function PlayerSessionScreen({
   if (subPhase === 'round' && roundData) {
     return (
       <div className="screen player-game-screen">
-        {roundData.gameId === 'buttonMash' && (
-          <ButtonMashPlayerView
+        {roundData.gameId === 'timingRelay' && (
+          <TimingRelayPlayerView
             client={client}
             getNow={() => client.now()}
             startAnchorServerTime={roundData.startAnchorServerTime}
+            myTurnOffsetMs={roundData.myTurnOffsetMs ?? 0}
           />
         )}
-        {roundData.gameId === 'aimClick' && (
-          <AimClickPlayerView
+        {roundData.gameId === 'syncBuild' && (
+          <SyncBuildPlayerView
             client={client}
             getNow={() => client.now()}
             startAnchorServerTime={roundData.startAnchorServerTime}
-          />
-        )}
-        {roundData.gameId === 'simonSays' && (
-          <SimonSaysPlayerView
-            client={client}
-            getNow={() => client.now()}
-            startAnchorServerTime={roundData.startAnchorServerTime}
+            beatCount={roundData.beatCount ?? 0}
+            beatIntervalMs={roundData.beatIntervalMs ?? 0}
           />
         )}
       </div>

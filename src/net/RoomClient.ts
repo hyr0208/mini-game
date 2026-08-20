@@ -1,23 +1,18 @@
 import type {
   ClientMessage,
-  GameId,
   PlayerInfo,
   RoundResultEntry,
   SessionResultEntry,
   ServerMessage,
 } from './protocol';
 
+export type RoundStartingPayload = Extract<ServerMessage, { type: 'round_starting' }>;
+
 export interface RoomClientCallbacks {
   onRoomCreated?: (roomCode: string) => void;
   onRoomJoined?: (roomCode: string, playerId: string, color: string) => void;
   onPlayerList?: (players: PlayerInfo[]) => void;
-  onRoundStarting?: (
-    gameId: GameId,
-    roundIndex: number,
-    totalRounds: number,
-    startAnchorServerTime: number,
-    simonSequence?: number[],
-  ) => void;
+  onRoundStarting?: (payload: RoundStartingPayload) => void;
   onRoundLiveUpdate?: (playerId: string, score: number) => void;
   onRoundResult?: (entries: RoundResultEntry[]) => void;
   onSessionFinished?: (entries: SessionResultEntry[]) => void;
@@ -100,10 +95,6 @@ export class RoomClient {
     this.send({ type: 'round_score', score });
   }
 
-  submitSimonGuess(sequence: number[]) {
-    this.send({ type: 'simon_guess', sequence });
-  }
-
   leaveRoom() {
     this.send({ type: 'leave_room' });
   }
@@ -153,13 +144,7 @@ export class RoomClient {
         this.recordPong(message.t0, message.serverTime);
         break;
       case 'round_starting':
-        this.callbacks.onRoundStarting?.(
-          message.gameId,
-          message.roundIndex,
-          message.totalRounds,
-          message.startAnchorServerTime,
-          message.simonSequence,
-        );
+        this.callbacks.onRoundStarting?.(message);
         break;
       case 'round_live_update':
         this.callbacks.onRoundLiveUpdate?.(message.playerId, message.score);

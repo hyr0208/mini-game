@@ -3,7 +3,8 @@
  * 별도 패키지라 공유 임포트 대신 수동으로 복제해서 관리한다.
  */
 
-export type GameId = 'buttonMash' | 'simonSays' | 'aimClick';
+export type Judgement = 'perfect' | 'great' | 'good' | 'miss';
+export type GameId = 'timingRelay' | 'syncBuild';
 
 export interface PlayerInfo {
   id: string;
@@ -26,6 +27,24 @@ export interface SessionResultEntry {
   totalScore: number;
 }
 
+/** 타이밍 릴레이: 참가자별 턴 순서 + 봇의 결과(호스트 화면 연출용, 참가자에게는 오지 않는다) */
+export interface TurnPlanEntry {
+  participantId: string;
+  name: string;
+  color: string;
+  isBot: boolean;
+  turnStartOffsetMs: number;
+  botResult?: { judgement: Judgement; deltaMs: number };
+}
+
+/** 다같이 완성하기: 봇 참가자별 박자당 결과 (호스트 화면 연출용) */
+export interface BeatPlanEntry {
+  participantId: string;
+  name: string;
+  color: string;
+  perBeatJudgement: Judgement[];
+}
+
 export type ClientMessage =
   | { type: 'create_room' }
   | { type: 'join_room'; roomCode: string; name: string }
@@ -33,7 +52,6 @@ export type ClientMessage =
   | { type: 'start_session' }
   | { type: 'round_live_score'; score: number }
   | { type: 'round_score'; score: number }
-  | { type: 'simon_guess'; sequence: number[] }
   | { type: 'leave_room' };
 
 export type ServerMessage =
@@ -47,8 +65,11 @@ export type ServerMessage =
       roundIndex: number;
       totalRounds: number;
       startAnchorServerTime: number;
-      /** simonSays 라운드에서만, 호스트에게만 실려온다 */
-      simonSequence?: number[];
+      turnPlan?: TurnPlanEntry[];
+      myTurnOffsetMs?: number;
+      beatCount?: number;
+      beatIntervalMs?: number;
+      beatPlan?: BeatPlanEntry[];
     }
   | { type: 'round_live_update'; playerId: string; score: number }
   | { type: 'round_result'; entries: RoundResultEntry[] }

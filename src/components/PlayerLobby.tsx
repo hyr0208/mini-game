@@ -19,7 +19,7 @@ export function PlayerLobby({ roomCode, players, myPlayerId }: Props) {
       <div className="room-code">{roomCode}</div>
       <p className="subtitle">호스트가 미니게임 나이트를 시작하길 기다리는 중...</p>
       <p className="subtitle">
-        {GAME_LABEL.buttonMash} · {GAME_LABEL.simonSays} · {GAME_LABEL.aimClick}
+        {GAME_LABEL.timingRelay} · {GAME_LABEL.syncBuild}
       </p>
 
       <ul className="player-key-list">

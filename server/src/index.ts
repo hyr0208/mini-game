@@ -1,15 +1,23 @@
 import { randomUUID } from 'node:crypto';
 import { WebSocketServer, type WebSocket } from 'ws';
-import type { ClientMessage, GameId, RoundResultEntry, SessionResultEntry, ServerMessage } from './protocol.js';
+import type {
+  BeatPlanEntry,
+  ClientMessage,
+  RoundResultEntry,
+  SessionResultEntry,
+  ServerMessage,
+  TurnPlanEntry,
+} from './protocol.js';
 import {
   MAX_PLAYERS,
   createRoom,
   generateRoomCode,
-  generateSimonSequence,
   nextColor,
   shuffledGames,
   type Room,
 } from './rooms.js';
+import { createBots, simulateBotDeltaMs } from './bots.js';
+import { RELAY_SCORE_TABLE, SYNC_SCORE_TABLE, judgeFromAbsDeltaMs } from './scoring.js';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const wss = new WebSocketServer({ port: PORT });
@@ -20,23 +28,21 @@ const rooms = new Map<string, Room>();
 const ROUND_LEAD_MS = 3000;
 /** 라운드 결과를 보여준 뒤 다음 라운드로 자동 진행하기까지 대기 시간 (ms) */
 const ROUND_RESULT_DISPLAY_MS = 3500;
-
-const SIMON_SEQUENCE_LENGTH = 5;
-const SIMON_COLOR_COUNT = 4;
-const SIMON_SCORE_PER_CORRECT_STEP = 200;
-const SIMON_STEP_MS = 700;
-const SIMON_INPUT_TIMEOUT_MS = 8000;
-const BUTTON_MASH_DURATION_MS = 5000;
-const AIM_DURATION_MS = 8000;
-
-/** 게임별 최대 진행 시간 (ms). 클라이언트가 어떤 이유로든 응답을 보내지 않을 때 라운드가 영원히
- * 멈추지 않도록, 이 시간이 지나면 서버가 나서서 미제출 플레이어를 0점으로 강제 마감한다. */
-const GAME_DURATION_MS: Record<GameId, number> = {
-  buttonMash: BUTTON_MASH_DURATION_MS,
-  simonSays: SIMON_SEQUENCE_LENGTH * SIMON_STEP_MS + SIMON_INPUT_TIMEOUT_MS,
-  aimClick: AIM_DURATION_MS,
-};
 const ROUND_SAFETY_BUFFER_MS = 3000;
+
+/** 타이밍 릴레이: 참가자 한 명의 턴에 배정된 시간 (ms). 클라이언트 상수와 반드시 맞춰야 한다. */
+const TURN_DURATION_MS = 2000;
+/** 다같이 완성하기: 박자 수 / 박자 간격 (ms). 클라이언트 상수와 반드시 맞춰야 한다. */
+const BEAT_COUNT = 6;
+const BEAT_INTERVAL_MS = 1200;
+
+interface Participant {
+  id: string;
+  name: string;
+  color: string;
+  isBot: boolean;
+  skill: number;
+}
 
 interface ConnState {
   roomCode: string | null;
@@ -62,6 +68,130 @@ function broadcastPlayerList(room: Room) {
   broadcastToRoom(room, { type: 'player_list', players });
 }
 
+function shuffle<T>(items: T[]): T[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getAllParticipants(room: Room): Participant[] {
+  const real: Participant[] = Array.from(room.players.values()).map((p) => ({
+    id: p.id,
+    name: p.name,
+    color: p.color,
+    isBot: false,
+    skill: 1,
+  }));
+  const bots: Participant[] = Array.from(room.bots.values()).map((b) => ({
+    id: b.id,
+    name: b.name,
+    color: b.color,
+    isBot: true,
+    skill: b.skill,
+  }));
+  return [...real, ...bots];
+}
+
+function fillWithBots(room: Room) {
+  room.bots = new Map();
+  const needed = MAX_PLAYERS - room.players.size;
+  if (needed <= 0) return;
+  const usedColors = new Set(Array.from(room.players.values()).map((p) => p.color));
+  for (const bot of createBots(needed, usedColors)) room.bots.set(bot.id, bot);
+}
+
+function startTimingRelayRound(room: Room, startAnchorServerTime: number): number {
+  const order = shuffle(getAllParticipants(room));
+  const plan: TurnPlanEntry[] = order.map((p, index) => {
+    const turnStartOffsetMs = index * TURN_DURATION_MS;
+    if (!p.isBot) {
+      return { participantId: p.id, name: p.name, color: p.color, isBot: false, turnStartOffsetMs };
+    }
+    const deltaMs = simulateBotDeltaMs(p.skill);
+    const judgement = judgeFromAbsDeltaMs(Math.abs(deltaMs));
+    return {
+      participantId: p.id,
+      name: p.name,
+      color: p.color,
+      isBot: true,
+      turnStartOffsetMs,
+      botResult: { judgement, deltaMs },
+    };
+  });
+
+  const roundIndex = room.currentRoundIndex;
+  const totalRounds = room.sessionGames.length;
+
+  send(room.hostSocket, {
+    type: 'round_starting',
+    gameId: 'timingRelay',
+    roundIndex,
+    totalRounds,
+    startAnchorServerTime,
+    turnPlan: plan,
+  });
+
+  for (const player of room.players.values()) {
+    const mine = plan.find((entry) => entry.participantId === player.id);
+    send(player.socket, {
+      type: 'round_starting',
+      gameId: 'timingRelay',
+      roundIndex,
+      totalRounds,
+      startAnchorServerTime,
+      myTurnOffsetMs: mine?.turnStartOffsetMs ?? 0,
+    });
+  }
+
+  // 봇의 결과는 이미 정해져 있으므로 즉시 확정한다.
+  for (const entry of plan) {
+    if (!entry.isBot || !entry.botResult) continue;
+    finalizePlayerRound(room, entry.participantId, RELAY_SCORE_TABLE[entry.botResult.judgement]);
+  }
+
+  return plan.length * TURN_DURATION_MS;
+}
+
+function startSyncBuildRound(room: Room, startAnchorServerTime: number): number {
+  const participants = getAllParticipants(room);
+  const beatPlan: BeatPlanEntry[] = participants
+    .filter((p) => p.isBot)
+    .map((bot) => ({
+      participantId: bot.id,
+      name: bot.name,
+      color: bot.color,
+      perBeatJudgement: Array.from({ length: BEAT_COUNT }, () =>
+        judgeFromAbsDeltaMs(Math.abs(simulateBotDeltaMs(bot.skill))),
+      ),
+    }));
+
+  const roundIndex = room.currentRoundIndex;
+  const totalRounds = room.sessionGames.length;
+  const base = {
+    gameId: 'syncBuild' as const,
+    roundIndex,
+    totalRounds,
+    startAnchorServerTime,
+    beatCount: BEAT_COUNT,
+    beatIntervalMs: BEAT_INTERVAL_MS,
+  };
+
+  send(room.hostSocket, { type: 'round_starting', ...base, beatPlan });
+  for (const player of room.players.values()) {
+    send(player.socket, { type: 'round_starting', ...base });
+  }
+
+  for (const entry of beatPlan) {
+    const score = entry.perBeatJudgement.reduce((sum, j) => sum + SYNC_SCORE_TABLE[j], 0);
+    finalizePlayerRound(room, entry.participantId, score);
+  }
+
+  return BEAT_COUNT * BEAT_INTERVAL_MS;
+}
+
 function startNextRound(room: Room) {
   room.currentRoundIndex += 1;
 
@@ -73,73 +203,85 @@ function startNextRound(room: Room) {
   const gameId = room.sessionGames[room.currentRoundIndex];
   room.roundFinishedPlayerIds = new Set();
   room.roundScores = new Map();
-  room.currentSimonSequence =
-    gameId === 'simonSays' ? generateSimonSequence(SIMON_SEQUENCE_LENGTH, SIMON_COLOR_COUNT) : null;
 
   const startAnchorServerTime = Date.now() + ROUND_LEAD_MS;
-
-  const playerMessage: ServerMessage = {
-    type: 'round_starting',
-    gameId,
-    roundIndex: room.currentRoundIndex,
-    totalRounds: room.sessionGames.length,
-    startAnchorServerTime,
-  };
-  for (const p of room.players.values()) send(p.socket, playerMessage);
-
-  send(room.hostSocket, {
-    ...playerMessage,
-    simonSequence: room.currentSimonSequence ?? undefined,
-  });
+  const activeDurationMs =
+    gameId === 'timingRelay'
+      ? startTimingRelayRound(room, startAnchorServerTime)
+      : startSyncBuildRound(room, startAnchorServerTime);
 
   const roundIndexAtSchedule = room.currentRoundIndex;
-  const safetyMs = ROUND_LEAD_MS + GAME_DURATION_MS[gameId] + ROUND_SAFETY_BUFFER_MS;
+  const safetyMs = ROUND_LEAD_MS + activeDurationMs + ROUND_SAFETY_BUFFER_MS;
   setTimeout(() => {
     if (rooms.get(room.code) !== room) return; // 그 사이 방이 닫혔으면 아무것도 하지 않는다
     if (room.currentRoundIndex !== roundIndexAtSchedule) return; // 이미 정상적으로 다음 라운드로 넘어갔다
-    for (const p of room.players.values()) {
-      finalizePlayerRound(room, p.id, 0);
-    }
+    for (const p of room.players.values()) finalizePlayerRound(room, p.id, 0);
+    for (const b of room.bots.values()) finalizePlayerRound(room, b.id, 0);
   }, safetyMs);
 }
 
-function finalizePlayerRound(room: Room, playerId: string, roundScore: number) {
-  if (room.roundFinishedPlayerIds.has(playerId)) return;
-  room.roundFinishedPlayerIds.add(playerId);
-  room.roundScores.set(playerId, roundScore);
+function finalizePlayerRound(room: Room, participantId: string, roundScore: number) {
+  if (room.roundFinishedPlayerIds.has(participantId)) return;
+  room.roundFinishedPlayerIds.add(participantId);
+  room.roundScores.set(participantId, roundScore);
 
-  const player = room.players.get(playerId);
-  if (player) player.totalScore += roundScore;
+  const player = room.players.get(participantId);
+  if (player) {
+    player.totalScore += roundScore;
+  } else {
+    const bot = room.bots.get(participantId);
+    if (bot) bot.totalScore += roundScore;
+  }
 
   maybeFinishRound(room);
 }
 
+function buildRoundResults(room: Room): RoundResultEntry[] {
+  const playerEntries = Array.from(room.players.values()).map((p) => ({
+    playerId: p.id,
+    name: p.name,
+    color: p.color,
+    roundScore: room.roundScores.get(p.id) ?? 0,
+    totalScore: p.totalScore,
+  }));
+  const botEntries = Array.from(room.bots.values()).map((b) => ({
+    playerId: b.id,
+    name: b.name,
+    color: b.color,
+    roundScore: room.roundScores.get(b.id) ?? 0,
+    totalScore: b.totalScore,
+  }));
+  return [...playerEntries, ...botEntries].sort((a, b) => b.totalScore - a.totalScore);
+}
+
 function maybeFinishRound(room: Room) {
-  if (room.roundFinishedPlayerIds.size < room.players.size) return;
+  const totalParticipants = room.players.size + room.bots.size;
+  if (room.roundFinishedPlayerIds.size < totalParticipants) return;
 
-  const entries: RoundResultEntry[] = Array.from(room.players.values())
-    .map((p) => ({
-      playerId: p.id,
-      name: p.name,
-      color: p.color,
-      roundScore: room.roundScores.get(p.id) ?? 0,
-      totalScore: p.totalScore,
-    }))
-    .sort((a, b) => b.totalScore - a.totalScore);
-
+  const entries = buildRoundResults(room);
   broadcastToRoom(room, { type: 'round_result', entries });
 
   setTimeout(() => {
-    if (rooms.get(room.code) !== room) return; // 그 사이 방이 닫혔으면 진행하지 않는다
+    if (rooms.get(room.code) !== room) return;
     startNextRound(room);
   }, ROUND_RESULT_DISPLAY_MS);
 }
 
 function finishSession(room: Room) {
   room.phase = 'finished';
-  const entries: SessionResultEntry[] = Array.from(room.players.values())
-    .map((p) => ({ playerId: p.id, name: p.name, color: p.color, totalScore: p.totalScore }))
-    .sort((a, b) => b.totalScore - a.totalScore);
+  const playerEntries: SessionResultEntry[] = Array.from(room.players.values()).map((p) => ({
+    playerId: p.id,
+    name: p.name,
+    color: p.color,
+    totalScore: p.totalScore,
+  }));
+  const botEntries: SessionResultEntry[] = Array.from(room.bots.values()).map((b) => ({
+    playerId: b.id,
+    name: b.name,
+    color: b.color,
+    totalScore: b.totalScore,
+  }));
+  const entries = [...playerEntries, ...botEntries].sort((a, b) => b.totalScore - a.totalScore);
 
   broadcastToRoom(room, { type: 'session_finished', entries });
 }
@@ -237,12 +379,17 @@ wss.on('connection', (socket) => {
 
       case 'start_session': {
         const room = currentRoom();
-        if (!room || state.role !== 'host' || room.players.size === 0) return;
+        if (!room || state.role !== 'host') return;
+        if (room.players.size === 0) {
+          send(socket, { type: 'error', message: '참가자가 없어요. 누군가 방에 참가한 뒤 시작해주세요.' });
+          return;
+        }
 
         room.phase = 'playing';
         room.sessionGames = shuffledGames();
         room.currentRoundIndex = -1;
         for (const p of room.players.values()) p.totalScore = 0;
+        fillWithBots(room);
 
         startNextRound(room);
         break;
@@ -263,25 +410,6 @@ wss.on('connection', (socket) => {
         const room = currentRoom();
         if (!room || state.role !== 'player' || !state.playerId) return;
         finalizePlayerRound(room, state.playerId, msg.score);
-        break;
-      }
-
-      case 'simon_guess': {
-        const room = currentRoom();
-        if (!room || state.role !== 'player' || !state.playerId) return;
-        const answer = room.currentSimonSequence ?? [];
-
-        let correctPrefix = 0;
-        for (let i = 0; i < msg.sequence.length && i < answer.length; i++) {
-          if (msg.sequence[i] !== answer[i]) break;
-          correctPrefix += 1;
-        }
-        const fullyCorrect = correctPrefix === answer.length && msg.sequence.length === answer.length;
-        const roundScore = fullyCorrect
-          ? SIMON_SCORE_PER_CORRECT_STEP * answer.length
-          : correctPrefix * SIMON_SCORE_PER_CORRECT_STEP;
-
-        finalizePlayerRound(room, state.playerId, roundScore);
         break;
       }
 

@@ -8,9 +8,17 @@ import { HostSessionScreen, type RoundData, type SubPhase } from './components/H
 import { JoinRoom } from './components/JoinRoom';
 import { PlayerLobby } from './components/PlayerLobby';
 import { PlayerSessionScreen } from './components/PlayerSessionScreen';
+import { SoloSessionScreen } from './components/SoloSessionScreen';
 import './App.css';
 
-type Screen = 'role' | 'hostLobby' | 'hostSession' | 'joinRoom' | 'playerLobby' | 'playerSession';
+type Screen =
+  | 'role'
+  | 'solo'
+  | 'hostLobby'
+  | 'hostSession'
+  | 'joinRoom'
+  | 'playerLobby'
+  | 'playerSession';
 
 /**
  * 화면 전환만 담당하는 최상위 컴포넌트. 라운드/결과 관련 RoomClient 콜백은 방을
@@ -30,8 +38,7 @@ function App() {
 
   // 라운드/결과 상태 (호스트·참가자 화면이 공유)
   const [subPhase, setSubPhase] = useState<SubPhase>('round');
-  const [roundData, setRoundData] = useState<RoundData | null>(null);
-  const [liveScores, setLiveScores] = useState<Record<string, number>>({});
+  const [roundData, setRoundData] = useState<(RoundData & { myTurnOffsetMs?: number }) | null>(null);
   const [roundResultEntries, setRoundResultEntries] = useState<RoundResultEntry[] | null>(null);
   const [sessionEntries, setSessionEntries] = useState<SessionResultEntry[] | null>(null);
 
@@ -56,13 +63,9 @@ function App() {
       client.setCallbacks({
         onRoomCreated: (code) => setRoomCode(code),
         onPlayerList: (list) => setRoster(list),
-        onRoundStarting: (gameId, roundIndex, totalRounds, startAnchorServerTime, simonSequence) => {
-          setLiveScores({});
-          setRoundData({ gameId, roundIndex, totalRounds, startAnchorServerTime, simonSequence });
+        onRoundStarting: (payload) => {
+          setRoundData(payload);
           setSubPhase('round');
-        },
-        onRoundLiveUpdate: (playerId, score) => {
-          setLiveScores((prev) => ({ ...prev, [playerId]: score }));
         },
         onRoundResult: (entries) => {
           setRoundResultEntries(entries);
@@ -98,8 +101,16 @@ function App() {
   return (
     <div className="app">
       {screen === 'role' && (
-        <RoleSelect onHost={goHost} onJoin={goJoin} connecting={connecting} error={connectError} />
+        <RoleSelect
+          onSolo={() => setScreen('solo')}
+          onHost={goHost}
+          onJoin={goJoin}
+          connecting={connecting}
+          error={connectError}
+        />
       )}
+
+      {screen === 'solo' && <SoloSessionScreen onExit={() => setScreen('role')} />}
 
       {screen === 'hostLobby' && (
         <HostLobby
@@ -116,11 +127,10 @@ function App() {
 
       {screen === 'hostSession' && (
         <HostSessionScreen
-          client={client}
+          getNow={() => client.now()}
           players={roster}
           subPhase={subPhase}
           roundData={roundData}
-          liveScores={liveScores}
           roundResultEntries={roundResultEntries}
           sessionEntries={sessionEntries}
           onPlayAgain={() => setScreen('hostLobby')}
@@ -134,8 +144,8 @@ function App() {
           onJoined={(code, playerId) => {
             client.setCallbacks({
               onPlayerList: (list) => setRoster(list),
-              onRoundStarting: (gameId, roundIndex, totalRounds, startAnchorServerTime) => {
-                setRoundData({ gameId, roundIndex, totalRounds, startAnchorServerTime });
+              onRoundStarting: (payload) => {
+                setRoundData(payload);
                 setSubPhase('round');
                 setScreen('playerSession');
               },

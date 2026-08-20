@@ -1,5 +1,6 @@
 import type { WebSocket } from 'ws';
 import type { GameId } from './protocol.js';
+import type { BotParticipant } from './bots.js';
 
 export const MAX_PLAYERS = 4;
 export const COLOR_PALETTE = ['#ff5d8f', '#5dd6ff', '#ffd15d', '#8bff5d'];
@@ -21,15 +22,15 @@ export interface Room {
   code: string;
   hostSocket: WebSocket;
   players: Map<string, RoomPlayer>;
+  /** 세션 시작 시 사람 수가 4명 미만이면 남는 자리를 채우는 CPU 참가자 */
+  bots: Map<string, BotParticipant>;
   phase: 'lobby' | 'playing' | 'finished';
   /** 이번 세션에서 진행할 게임 순서 (셔플됨) */
   sessionGames: GameId[];
   /** -1 = 세션 시작 전 */
   currentRoundIndex: number;
-  /** simonSays 라운드의 정답. 호스트에게만 전달되고 서버가 채점 기준으로 보관한다. */
-  currentSimonSequence: number[] | null;
   roundFinishedPlayerIds: Set<string>;
-  /** 이번 라운드 각 플레이어의 최종 점수 */
+  /** 이번 라운드 각 참가자의 최종 점수 */
   roundScores: Map<string, number>;
 }
 
@@ -57,24 +58,20 @@ export function createRoom(code: string, hostSocket: WebSocket): Room {
     code,
     hostSocket,
     players: new Map(),
+    bots: new Map(),
     phase: 'lobby',
     sessionGames: [],
     currentRoundIndex: -1,
-    currentSimonSequence: null,
     roundFinishedPlayerIds: new Set(),
     roundScores: new Map(),
   };
 }
 
 export function shuffledGames(): GameId[] {
-  const games: GameId[] = ['buttonMash', 'simonSays', 'aimClick'];
+  const games: GameId[] = ['timingRelay', 'syncBuild'];
   for (let i = games.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [games[i], games[j]] = [games[j], games[i]];
   }
   return games;
-}
-
-export function generateSimonSequence(length: number, colorCount: number): number[] {
-  return Array.from({ length }, () => Math.floor(Math.random() * colorCount));
 }
