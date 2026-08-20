@@ -21,6 +21,8 @@ import {
   COIN_RUSH_DURATION_MS,
   COIN_RUSH_SCORE_PER_COIN,
   RELAY_SCORE_TABLE,
+  SYNC_BEAT_PATTERNS,
+  SYNC_TARGET_PATTERNS,
   SYNC_SCORE_TABLE,
   judgeFromAbsDeltaMs,
 } from './scoring.js';
@@ -39,7 +41,6 @@ const ROUND_SAFETY_BUFFER_MS = 3000;
 /** 타이밍 릴레이: 참가자 한 명의 턴에 배정된 시간 (ms). 클라이언트 상수와 반드시 맞춰야 한다. */
 const TURN_DURATION_MS = 2000;
 /** 다같이 완성하기: 박자 수 / 박자 간격 (ms). 클라이언트 상수와 반드시 맞춰야 한다. */
-const BEAT_COUNT = 6;
 const BEAT_INTERVAL_MS = 1200;
 
 interface Participant {
@@ -163,13 +164,17 @@ function startTimingRelayRound(room: Room, startAnchorServerTime: number): numbe
 
 function startSyncBuildRound(room: Room, startAnchorServerTime: number): number {
   const participants = getAllParticipants(room);
+  const beatIntervalsMs = [...SYNC_BEAT_PATTERNS[room.currentRoundIndex % SYNC_BEAT_PATTERNS.length]];
+  const beatCount = beatIntervalsMs.length;
+  const targetPattern = SYNC_TARGET_PATTERNS[room.currentRoundIndex % SYNC_TARGET_PATTERNS.length];
+  const beatTargets = Array.from({ length: beatCount }, (_, index) => targetPattern[index % targetPattern.length]);
   const beatPlan: BeatPlanEntry[] = participants
     .filter((p) => p.isBot)
     .map((bot) => ({
       participantId: bot.id,
       name: bot.name,
       color: bot.color,
-      perBeatJudgement: Array.from({ length: BEAT_COUNT }, () =>
+      perBeatJudgement: Array.from({ length: beatCount }, () =>
         judgeFromAbsDeltaMs(Math.abs(simulateBotDeltaMs(bot.skill))),
       ),
     }));
@@ -181,8 +186,10 @@ function startSyncBuildRound(room: Room, startAnchorServerTime: number): number 
     roundIndex,
     totalRounds,
     startAnchorServerTime,
-    beatCount: BEAT_COUNT,
+    beatCount,
     beatIntervalMs: BEAT_INTERVAL_MS,
+    beatIntervalsMs,
+    beatTargets,
   };
 
   send(room.hostSocket, { type: 'round_starting', ...base, beatPlan });
@@ -195,7 +202,7 @@ function startSyncBuildRound(room: Room, startAnchorServerTime: number): number 
     finalizePlayerRound(room, entry.participantId, score);
   }
 
-  return BEAT_COUNT * BEAT_INTERVAL_MS;
+  return beatIntervalsMs.reduce((sum, interval) => sum + interval, 0);
 }
 
 function startCoinRushRound(room: Room, startAnchorServerTime: number): number {

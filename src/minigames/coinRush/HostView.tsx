@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useRoundClock } from '../useRoundClock';
-import { COIN_RUSH_DURATION_MS } from '../constants';
+import { COIN_LANE_INTERVAL_MS, COIN_LANE_PATTERN, COIN_RUSH_DURATION_MS } from '../constants';
+import { CharacterAvatar } from '../CharacterAvatar';
 import type { PlayerInfo } from '../../net/protocol';
 
 interface Props {
@@ -15,6 +16,20 @@ export function CoinRushHostView({ getNow, startAnchorServerTime, players }: Pro
   const remainingSeconds = Math.ceil(remainingMs / 1000);
   const active = elapsedMs >= 0 && elapsedMs < COIN_RUSH_DURATION_MS;
   const progress = Math.min(1, Math.max(0, elapsedMs / COIN_RUSH_DURATION_MS));
+  const targetLane = active
+    ? COIN_LANE_PATTERN[Math.floor(elapsedMs / COIN_LANE_INTERVAL_MS) % COIN_LANE_PATTERN.length]
+    : -1;
+  const participants = useMemo(
+    () => [
+      ...players.map((player) => ({ id: player.id, name: player.name, color: player.color })),
+      ...Array.from({ length: Math.max(0, 4 - players.length) }, (_, index) => ({
+        id: `coin-cpu-${index}`,
+        name: `CPU ${index + 1}`,
+        color: ['#5dd6ff', '#8bff5d', '#ffd15d', '#ff5d8f'][index],
+      })),
+    ],
+    [players],
+  );
 
   const coinPositions = useMemo(
     () => [
@@ -51,6 +66,28 @@ export function CoinRushHostView({ getNow, startAnchorServerTime, players }: Pro
         <div className="coin-progress-track">
           <div className="coin-progress-fill" style={{ transform: `scaleX(${progress})` }} />
         </div>
+      </div>
+
+      <div className="coin-host-lanes">
+        {['LEFT', 'CENTER', 'RIGHT'].map((label, lane) => (
+          <div className={`coin-host-lane ${targetLane === lane ? 'is-target' : ''}`} key={label}>
+            <span>{targetLane === lane ? '🪙' : '💣'}</span>
+            <small>{label}</small>
+          </div>
+        ))}
+      </div>
+
+      <div className={`coin-character-scene ${active ? 'is-rushing' : ''}`}>
+        {participants.map((participant, index) => (
+          <CharacterAvatar
+            key={participant.id}
+            name={participant.name}
+            color={participant.color}
+            size={48}
+            mood={active ? 'happy' : 'idle'}
+            active={active && index === 0}
+          />
+        ))}
       </div>
 
       {elapsedMs < 0 && <div className="minigame-countdown">{Math.ceil(-elapsedMs / 1000)}</div>}

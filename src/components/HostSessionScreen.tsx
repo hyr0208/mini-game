@@ -20,6 +20,8 @@ export interface RoundData {
   turnPlan?: TurnPlanEntry[];
   beatCount?: number;
   beatIntervalMs?: number;
+  beatIntervalsMs?: number[];
+  beatTargets?: number[];
   beatPlan?: BeatPlanEntry[];
 }
 
@@ -69,6 +71,8 @@ export function HostSessionScreen({
             startAnchorServerTime={roundData.startAnchorServerTime}
             beatCount={roundData.beatCount ?? 0}
             beatIntervalMs={roundData.beatIntervalMs ?? 0}
+            beatIntervalsMs={roundData.beatIntervalsMs}
+            beatTargets={roundData.beatTargets}
             beatPlan={roundData.beatPlan ?? []}
             players={players}
           />

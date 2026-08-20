@@ -49,6 +49,8 @@ export function PlayerSessionScreen({
             startAnchorServerTime={roundData.startAnchorServerTime}
             beatCount={roundData.beatCount ?? 0}
             beatIntervalMs={roundData.beatIntervalMs ?? 0}
+            beatIntervalsMs={roundData.beatIntervalsMs}
+            beatTargets={roundData.beatTargets}
           />
         )}
         {roundData.gameId === 'coinRush' && (

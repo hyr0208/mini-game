@@ -21,6 +21,18 @@ export const SYNC_SCORE_TABLE: Record<Judgement, number> = {
   miss: 0,
 };
 
+export const SYNC_BEAT_PATTERNS = [
+  [1050, 850, 1050, 700, 1050, 850],
+  [900, 900, 650, 900, 750, 650, 900],
+  [800, 620, 1000, 620, 800, 620, 1000, 620],
+] as const;
+
+export const SYNC_TARGET_PATTERNS = [
+  [0, 1, 2, 1, 0, 2],
+  [1, 2, 0, 2, 1, 0, 2],
+  [2, 0, 1, 2, 0, 1, 2, 1],
+] as const;
+
 export const COIN_RUSH_DURATION_MS = 8000;
 export const COIN_RUSH_SCORE_PER_COIN = 50;
 

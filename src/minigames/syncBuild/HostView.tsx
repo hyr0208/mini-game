@@ -8,6 +8,8 @@ interface Props {
   startAnchorServerTime: number;
   beatCount: number;
   beatIntervalMs: number;
+  beatIntervalsMs?: number[];
+  beatTargets?: number[];
   beatPlan: BeatPlanEntry[];
   players: PlayerInfo[];
 }
@@ -22,15 +24,28 @@ export function SyncBuildHostView({
   startAnchorServerTime,
   beatCount,
   beatIntervalMs,
+  beatIntervalsMs,
+  beatTargets,
   beatPlan,
   players,
 }: Props) {
   const elapsedMs = useRoundClock(getNow, startAnchorServerTime);
-  const totalMs = beatCount * beatIntervalMs;
-
-  const currentBeat = elapsedMs < 0 ? -1 : Math.min(beatCount - 1, Math.floor(elapsedMs / beatIntervalMs));
-  const revealedLayers = elapsedMs < 0 ? 0 : Math.min(beatCount, Math.floor(elapsedMs / beatIntervalMs) + 1);
+  const intervals = beatIntervalsMs?.length ? beatIntervalsMs : Array.from({ length: beatCount }, () => beatIntervalMs);
+  const beatStarts = intervals.reduce<number[]>((starts, _interval, index) => {
+    starts.push(index === 0 ? 0 : starts[index - 1] + intervals[index - 1]);
+    return starts;
+  }, []);
+  const totalMs = intervals.reduce((sum, interval) => sum + interval, 0);
+  const currentBeat = elapsedMs < 0 || elapsedMs >= totalMs
+    ? -1
+    : Math.min(beatCount - 1, Math.max(0, beatStarts.findIndex((start, index) =>
+      elapsedMs >= start && elapsedMs < start + intervals[index],
+    )));
+  const revealedLayers = elapsedMs < 0
+    ? 0
+    : Math.min(beatCount, beatStarts.filter((start) => elapsedMs >= start).length);
   const complete = elapsedMs >= totalMs;
+  const activeLane = currentBeat >= 0 ? beatTargets?.[currentBeat] ?? currentBeat % 3 : -1;
 
   const participants = useMemo(
     () => [
@@ -41,13 +56,22 @@ export function SyncBuildHostView({
   );
 
   return (
-    <div className="minigame-host-view">
+    <div className="minigame-host-view sync-host-view">
       <h2 className="minigame-title">다같이 완성하기</h2>
       <p className="subtitle">
-        {complete ? '완성했어요!' : '다같이 같은 박자에 맞춰 눌러서 함께 완성해요'}
+        {complete ? '완성했어요!' : '화면의 과일을 보고 같은 레인을 박자에 맞춰 눌러요'}
       </p>
 
       {elapsedMs < 0 && <div className="minigame-countdown">{Math.ceil(-elapsedMs / 1000)}</div>}
+
+      <div className="sync-lane-stage">
+        {['🍓', '🍋', '🍇'].map((fruit, lane) => (
+          <div className={`sync-stage-lane ${activeLane === lane ? 'is-target' : ''}`} key={fruit}>
+            <span className="sync-stage-lane-fruit">{fruit}</span>
+            <span className="sync-stage-lane-light" />
+          </div>
+        ))}
+      </div>
 
       <div className="sync-tower">
         {Array.from({ length: beatCount }).map((_, index) => (

@@ -69,6 +69,8 @@ export type ServerMessage =
       myTurnOffsetMs?: number;
       beatCount?: number;
       beatIntervalMs?: number;
+      beatIntervalsMs?: number[];
+      beatTargets?: number[];
       beatPlan?: BeatPlanEntry[];
     }
   | { type: 'round_live_update'; playerId: string; score: number }

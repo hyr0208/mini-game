@@ -72,6 +72,8 @@ export type ServerMessage =
       /** syncBuild: 전원에게 공통으로 실려오는 박자 스케줄 */
       beatCount?: number;
       beatIntervalMs?: number;
+      beatIntervalsMs?: number[];
+      beatTargets?: number[];
       /** syncBuild: 호스트에게만 실려오는 봇들의 박자별 결과 */
       beatPlan?: BeatPlanEntry[];
     }

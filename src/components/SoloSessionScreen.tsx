@@ -9,13 +9,14 @@ import type {
 import { LocalClient } from '../net/LocalClient';
 import { createLocalBots, simulateBotDeltaMs, type LocalBot } from '../minigames/localBots';
 import {
-  BEAT_COUNT,
   BEAT_INTERVAL_MS,
   RELAY_SCORE_TABLE,
   ROUND_LEAD_MS,
   SYNC_SCORE_TABLE,
   TURN_DURATION_MS,
   COIN_RUSH_SCORE_PER_COIN,
+  getSyncBeatPattern,
+  getSyncBeatTargets,
   judgeFromAbsDeltaMs,
 } from '../minigames/constants';
 import { TimingRelayHostView } from '../minigames/timingRelay/HostView';
@@ -43,6 +44,8 @@ interface RoundData {
   myTurnOffsetMs?: number;
   beatCount?: number;
   beatIntervalMs?: number;
+  beatIntervalsMs?: number[];
+  beatTargets?: number[];
   beatPlan?: BeatPlanEntry[];
 }
 
@@ -175,11 +178,14 @@ export function SoloSessionScreen({ onExit }: Props) {
       const mine = plan.find((e) => e.participantId === HUMAN_ID);
       setRoundData({ gameId, startAnchorServerTime, turnPlan: plan, myTurnOffsetMs: mine?.turnStartOffsetMs ?? 0 });
     } else if (gameId === 'syncBuild') {
+      const beatIntervalsMs = getSyncBeatPattern(roundIndexRef.current);
+      const beatCount = beatIntervalsMs.length;
+      const beatTargets = getSyncBeatTargets(roundIndexRef.current, beatCount);
       const beatPlan: BeatPlanEntry[] = botsRef.current.map((bot) => ({
         participantId: bot.id,
         name: bot.name,
         color: bot.color,
-        perBeatJudgement: Array.from({ length: BEAT_COUNT }, () =>
+        perBeatJudgement: Array.from({ length: beatCount }, () =>
           judgeFromAbsDeltaMs(Math.abs(simulateBotDeltaMs(bot.skill))),
         ),
       }));
@@ -192,8 +198,10 @@ export function SoloSessionScreen({ onExit }: Props) {
       setRoundData({
         gameId,
         startAnchorServerTime,
-        beatCount: BEAT_COUNT,
+        beatCount,
         beatIntervalMs: BEAT_INTERVAL_MS,
+        beatIntervalsMs,
+        beatTargets,
         beatPlan,
       });
     } else {
@@ -258,9 +266,11 @@ export function SoloSessionScreen({ onExit }: Props) {
               client={clientRef.current}
               getNow={getNow}
               startAnchorServerTime={roundData.startAnchorServerTime}
-              beatCount={roundData.beatCount ?? 0}
-              beatIntervalMs={roundData.beatIntervalMs ?? 0}
-            />
+            beatCount={roundData.beatCount ?? 0}
+            beatIntervalMs={roundData.beatIntervalMs ?? 0}
+            beatIntervalsMs={roundData.beatIntervalsMs}
+            beatTargets={roundData.beatTargets}
+          />
           </>
         )}
         {roundData.gameId === 'coinRush' && (

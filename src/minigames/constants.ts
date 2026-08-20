@@ -38,6 +38,28 @@ export const RELAY_SCORE_TABLE: Record<Judgement, number> = {
 /** 다같이 완성하기: 박자 수 / 박자 간격 (ms). 서버 상수와 반드시 맞춰야 한다. */
 export const BEAT_COUNT = 6;
 export const BEAT_INTERVAL_MS = 1200;
+/** 라운드마다 박자 간격이 달라져서 단순 암기를 막는다. */
+export const SYNC_BEAT_PATTERNS = [
+  [1050, 850, 1050, 700, 1050, 850],
+  [900, 900, 650, 900, 750, 650, 900],
+  [800, 620, 1000, 620, 800, 620, 1000, 620],
+] as const;
+
+export function getSyncBeatPattern(roundIndex: number): number[] {
+  return [...SYNC_BEAT_PATTERNS[roundIndex % SYNC_BEAT_PATTERNS.length]];
+}
+
+const SYNC_TARGET_PATTERNS = [
+  [0, 1, 2, 1, 0, 2],
+  [1, 2, 0, 2, 1, 0, 2],
+  [2, 0, 1, 2, 0, 1, 2, 1],
+] as const;
+
+export function getSyncBeatTargets(roundIndex: number, beatCount: number): number[] {
+  const pattern = SYNC_TARGET_PATTERNS[roundIndex % SYNC_TARGET_PATTERNS.length];
+  return Array.from({ length: beatCount }, (_, index) => pattern[index % pattern.length]);
+}
+
 export const SYNC_SCORE_TABLE: Record<Judgement, number> = {
   perfect: 150,
   great: 100,
@@ -47,3 +69,9 @@ export const SYNC_SCORE_TABLE: Record<Judgement, number> = {
 
 export const COIN_RUSH_DURATION_MS = 8000;
 export const COIN_RUSH_SCORE_PER_COIN = 50;
+export const COIN_RUSH_TARGET_INTERVAL_MS = 360;
+export const COIN_RUSH_HIT_WINDOW_MS = 155;
+export const COIN_RUSH_COMBO_BONUS = 15;
+export const COIN_LANE_INTERVAL_MS = 620;
+export const COIN_LANE_HIT_WINDOW_MS = 245;
+export const COIN_LANE_PATTERN = [0, 2, 1, 2, 0, 1, 2, 1, 0, 2, 1, 0, 2] as const;
